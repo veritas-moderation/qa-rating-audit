@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veritas QA Suite - Blind Audit</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            sage: {
+              50: '#f4f7f4',
+              100: '#e3eae2',
+              200: '#cbd7ca',
+              300: '#adbfab',
+              400: '#8ca38a',
+              500: '#6f876d',
+              600: '#566c54',
+              700: '#455644',
+              800: '#384637',
+              900: '#2f3b2f',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- SheetJS for XLSX Import/Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- HLS.js for Streaming Video Support (.m3u8) -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(111, 135, 109, 0.4);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(86, 108, 84, 0.7);
+    }
+    .card-transition {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sage-linen-bg {
+      background-color: #cad6c8;
+      background-image: 
+        radial-gradient(ellipse at center, rgba(255,255,255,0.25) 0%, rgba(180,195,178,0.4) 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 100% 100%, cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 10px 30px -5px rgba(69, 86, 68, 0.08);
+    }
+    .dark .glass-panel {
+      background: rgba(30, 41, 32, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 20px -2px rgba(60, 80, 60, 0.08);
+    }
+    .dark .glass-card {
+      background: rgba(38, 50, 40, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.25);
+    }
+  </style>
+</head>
+<body class="sage-linen-bg text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans relative overflow-x-hidden transition-colors duration-200">
+
+  <!-- Botanical Framed Border -->
+  <div class="fixed inset-0 pointer-events-none z-10 overflow-hidden">
+    <svg class="absolute -top-4 -left-4 w-64 h-64 opacity-80" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 60 Q 60 40 120 10" stroke="#566c54" stroke-width="2" stroke-linecap="round"/>
+      <path d="M20 90 Q 70 80 140 40" stroke="#6f876d" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M40 47 Q 30 30 50 25 Q 55 40 40 47 Z" fill="#6f876d"/>
+      <path d="M70 37 Q 60 15 80 18 Q 80 32 70 37 Z" fill="#566c54"/>
+      <path d="M100 20 Q 95 2 110 8 Q 108 20 100 20 Z" fill="#6f876d"/>
+      <g transform="translate(120, 10)">
+        <circle cx="0" cy="0" r="5" fill="#eab308"/>
+        <ellipse cx="0" cy="-9" rx="3" ry="5" fill="#ffffff"/>
+        <ellipse cx="0" cy="9" rx="3" ry="5" fill="#ffffff"/>
+        <ellipse cx="-9" cy="0" rx="5" ry="3" fill="#ffffff"/>
+        <ellipse cx="9" cy="0" rx="5" ry="3" fill="#ffffff"/>
+      </g>
+    </svg>
+    <svg class="absolute -top-4 -right-4 w-64 h-64 opacity-80 transform scale-x-[-1]" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 60 Q 60 40 120 10" stroke="#566c54" stroke-width="2" stroke-linecap="round"/>
+      <path d="M20 90 Q 70 80 140 40" stroke="#6f876d" stroke-width="1.5" stroke-linecap="round"/>
+      <g transform="translate(120, 10)">
+        <circle cx="0" cy="0" r="5" fill="#eab308"/>
+        <ellipse cx="0" cy="-8" rx="3" ry="4.5" fill="#ffffff"/>
+        <ellipse cx="0" cy="8" rx="3" ry="4.5" fill="#ffffff"/>
+        <ellipse cx="-8" cy="0" rx="4.5" ry="3" fill="#ffffff"/>
+        <ellipse cx="8" cy="0" rx="4.5" ry="3" fill="#ffffff"/>
+      </g>
+    </svg>
+    <svg class="absolute -bottom-4 -left-4 w-64 h-64 opacity-80 transform scale-y-[-1]" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 60 Q 60 40 120 10" stroke="#566c54" stroke-width="2" stroke-linecap="round"/>
+      <g transform="translate(120, 10)">
+        <circle cx="0" cy="0" r="5" fill="#eab308"/>
+        <ellipse cx="0" cy="-8" rx="3" ry="4.5" fill="#ffffff"/>
+        <ellipse cx="0" cy="8" rx="3" ry="4.5" fill="#ffffff"/>
+        <ellipse cx="-8" cy="0" rx="4.5" ry="3" fill="#ffffff"/>
+        <ellipse cx="8" cy="0" rx="4.5" ry="3" fill="#ffffff"/>
+      </g>
+    </svg>
+    <svg class="absolute -bottom-4 -right-4 w-64 h-64 opacity-80 transform scale-x-[-1] scale-y-[-1]" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 60 Q 60 40 120 10" stroke="#566c54" stroke-width="2" stroke-linecap="round"/>
+      <g transform="translate(120, 10)">
+        <circle cx="0" cy="0" r="5" fill="#eab308"/>
+        <ellipse cx="0" cy="-8" rx="3" ry="4.5" fill="#ffffff"/>
+        <ellipse cx="0" cy="8" rx="3" ry="4.5" fill="#ffffff"/>
+        <ellipse cx="-8" cy="0" rx="4.5" ry="3" fill="#ffffff"/>
+        <ellipse cx="8" cy="0" rx="4.5" ry="3" fill="#ffffff"/>
+      </g>
+    </svg>
+  </div>
+
+  <header class="sticky top-0 z-30 glass-panel px-4 lg:px-8 py-3.5 shadow-sm transition-all">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-sage-700 text-white rounded-xl shadow-md shadow-sage-800/20">
+          <i data-lucide="shield-check" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg leading-tight text-sage-900 dark:text-sage-100">Veritas QA Suite</h1>
+            <span class="px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-sage-700/10 text-sage-800 dark:text-sage-200 border border-sage-600/30 rounded-full">
+              Blind Mode
+            </span>
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-300">Independent Quality Audit & Batch Moderation</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2 bg-white/70 dark:bg-slate-800/70 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-slate-700">
+          <i data-lucide="user-check" class="w-4 h-4 text-sage-600"></i>
+          <label for="auditor-id" class="text-xs font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">Auditor:</label>
+          <input type="text" id="auditor-id" value="Auditor_01" placeholder="Enter ID" 
+                 class="bg-transparent text-xs font-semibold focus:outline-none w-24 text-slate-800 dark:text-slate-100">
+        </div>
+
+        <button id="theme-toggle" class="p-2 text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 hover:bg-white rounded-lg border border-slate-200/80 dark:border-slate-700 transition-colors">
+          <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+          <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+        </button>
+
+        <label for="excel-file" class="cursor-pointer flex items-center gap-2 px-4 py-2 bg-sage-700 hover:bg-sage-800 text-white font-medium text-xs rounded-lg transition-all shadow-md shadow-sage-900/10 active:scale-95">
+          <i data-lucide="upload" class="w-4 h-4"></i>
+          <span>Upload Excel</span>
+        </label>
+        <input type="file" id="excel-file" accept=".xlsx, .xls" class="hidden">
+
+        <button id="export-btn" disabled class="disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-lg transition-all shadow-md shadow-emerald-900/10 active:scale-95">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Export Excel</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex flex-col gap-6 z-20 pb-28">
+
+    <!-- Progress Dashboard Panel -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="glass-panel p-4 rounded-2xl flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total Cases</p>
+          <h3 id="stat-total" class="text-2xl font-bold mt-0.5 text-sage-900 dark:text-sage-100">0</h3>
+        </div>
+        <div class="p-3 bg-sage-500/15 text-sage-700 dark:text-sage-300 rounded-xl">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 rounded-2xl flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-600 dark:text-slate-300">Page Progress</p>
+          <h3 id="stat-page-confirmed" class="text-2xl font-bold mt-0.5 text-amber-700 dark:text-amber-400">0 / 12</h3>
+        </div>
+        <div class="p-3 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded-xl">
+          <i data-lucide="check-square" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 rounded-2xl flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-600 dark:text-slate-300">Audited Cases</p>
+          <h3 id="stat-completed" class="text-2xl font-bold mt-0.5 text-emerald-700 dark:text-emerald-400">0</h3>
+        </div>
+        <div class="p-3 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 rounded-xl">
+          <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center">
+        <div class="flex justify-between items-center mb-1.5">
+          <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Overall Progress</span>
+          <span id="stat-percent" class="text-xs font-bold text-sage-700 dark:text-sage-300">0%</span>
+        </div>
+        <div class="w-full bg-slate-200/80 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+          <div id="stat-progress-bar" class="bg-sage-600 h-2 rounded-full transition-all duration-300 w-0"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search & Filter Header Bar -->
+    <section class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+      <div class="flex flex-wrap items-center gap-3 flex-1">
+        <div class="relative flex-1 min-w-[240px]">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="search-input" placeholder="Search ID, Title, Content..." 
+                 class="w-full pl-9 pr-4 py-2 text-xs bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500">
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Status:</label>
+          <select id="status-filter" class="px-3 py-2 text-xs bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500">
+            <option value="ALL" selected>All Cases</option>
+            <option value="PENDING">Pending Review</option>
+            <option value="CONFIRMED">Submitted Cases</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 justify-between md:justify-end">
+        <span id="page-info" class="text-xs font-bold text-sage-800 dark:text-sage-200">Batch 1 of 1</span>
+        <div class="flex items-center gap-1">
+          <button id="prev-page-btn" disabled class="p-1.5 rounded-lg bg-white/70 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 disabled:opacity-30">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <button id="next-page-btn" disabled class="p-1.5 rounded-lg bg-white/70 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 disabled:opacity-30">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards Container -->
+    <section id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      <div class="col-span-full py-20 px-4 text-center glass-panel rounded-3xl border border-dashed border-sage-400/50">
+        <div class="w-16 h-16 bg-sage-500/10 text-sage-700 dark:text-sage-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <i data-lucide="file-up" class="w-8 h-8"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">No Audit Dataset Loaded</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-6">
+          Upload an Excel audit spreadsheet (.xlsx, .xls) to render 12-case moderation pages in blind evaluation mode.
+        </p>
+        <label for="excel-file" class="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 bg-sage-700 hover:bg-sage-800 text-white font-medium text-xs rounded-xl shadow-lg shadow-sage-900/20 transition-all">
+          <i data-lucide="upload" class="w-4 h-4"></i>
+          <span>Select Excel File</span>
+        </label>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="fixed bottom-0 left-0 right-0 z-30 glass-panel border-t border-slate-200/80 dark:border-slate-700 px-4 py-3 shadow-2xl">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+        <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600"></i>
+        <span id="bottom-bar-status">Choose a rating (0-5) for all 12 cases on this page to unlock submission.</span>
+      </div>
+
+      <button id="batch-submit-btn" disabled 
+              class="w-full sm:w-auto px-6 py-2.5 bg-sage-700 hover:bg-sage-800 disabled:bg-slate-400 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-sage-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+        <span>Submit Page Cases & Next Batch</span>
+        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Image Viewer Pop-Up Modal with Integrated Carousel -->
+  <div id="image-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex flex-col items-center justify-center p-4">
+    
+    <!-- Top Modal Toolbar -->
+    <div class="absolute top-4 right-4 flex items-center gap-2 z-50 bg-slate-900/80 p-2 rounded-2xl border border-slate-700 text-white">
+      <button onclick="zoomImage(0.2)" title="Zoom In" class="p-2 hover:bg-slate-700 rounded-lg"><i data-lucide="zoom-in" class="w-5 h-5"></i></button>
+      <button onclick="zoomImage(-0.2)" title="Zoom Out" class="p-2 hover:bg-slate-700 rounded-lg"><i data-lucide="zoom-out" class="w-5 h-5"></i></button>
+      <button onclick="rotateImage(-90)" title="Rotate Left" class="p-2 hover:bg-slate-700 rounded-lg"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
+      <button onclick="rotateImage(90)" title="Rotate Right" class="p-2 hover:bg-slate-700 rounded-lg"><i data-lucide="rotate-cw" class="w-5 h-5"></i></button>
+      <button onclick="flipImage('h')" title="Flip Horizontal" class="p-2 hover:bg-slate-700 rounded-lg"><i data-lucide="flip-horizontal" class="w-5 h-5"></i></button>
+      <button onclick="flipImage('v')" title="Flip Vertical" class="p-2 hover:bg-slate-700 rounded-lg"><i data-lucide="flip-vertical" class="w-5 h-5"></i></button>
+      <button onclick="resetImageTransform()" title="Reset" class="p-2 hover:bg-slate-700 rounded-lg text-amber-400"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+      <button onclick="closeImageModal()" title="Close (ESC)" class="p-2 hover:bg-rose-600 rounded-lg ml-2"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+
+    <!-- Modal Carousel Navigation Buttons -->
+    <button id="modal-prev-btn" onclick="modalNavigateCarousel('prev')" 
+            class="hidden absolute left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-slate-900/80 text-white hover:bg-emerald-600 transition-all shadow-2xl z-50 border border-slate-700">
+      <i data-lucide="chevron-left" class="w-7 h-7"></i>
+    </button>
+    <button id="modal-next-btn" onclick="modalNavigateCarousel('next')" 
+            class="hidden absolute right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-slate-900/80 text-white hover:bg-emerald-600 transition-all shadow-2xl z-50 border border-slate-700">
+      <i data-lucide="chevron-right" class="w-7 h-7"></i>
+    </button>
+
+    <!-- Modal Counter Indicator -->
+    <div id="modal-counter-badge" class="hidden absolute top-4 left-6 px-3 py-1 bg-slate-900/80 border border-slate-700 backdrop-blur-md rounded-full text-xs font-mono font-bold text-white z-50">
+      1 / 1
+    </div>
+
+    <!-- Main Zoomable Viewport -->
+    <div class="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing" id="image-modal-viewport">
+      <img id="image-modal-src" src="" alt="Zoomable Media" class="max-h-[85vh] max-w-[85vw] object-contain transition-transform duration-100 ease-out">
+    </div>
+  </div>
+
+  <!-- Video Viewer Modal -->
+  <div id="video-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex flex-col items-center justify-center p-4">
+    <button onclick="closeVideoModal()" class="absolute top-4 right-4 p-2.5 bg-slate-800 hover:bg-rose-600 text-white rounded-xl transition-colors z-50">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+    <div class="w-full max-w-4xl max-h-[80vh] flex items-center justify-center">
+      <video id="modal-video-player" controls class="w-full h-full max-h-[80vh] rounded-2xl shadow-2xl bg-black"></video>
+    </div>
+  </div>
+
+  <script>
+    let rawDataset = [];
+    let currentPage = 1;
+    const ITEMS_PER_PAGE = 12;
+    let hlsInstance = null;
+    let carouselState = {}; // Stores current slide index per internal ID
+    let activeModalInternalId = null;
+
+    let imgScale = 1;
+    let imgRotate = 0;
+    let imgFlipH = 1;
+    let imgFlipV = 1;
+
+    const fileInput = document.getElementById('excel-file');
+    const exportBtn = document.getElementById('export-btn');
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+    const cardsContainer = document.getElementById('cards-container');
+    const batchSubmitBtn = document.getElementById('batch-submit-btn');
+    const prevPageBtn = document.getElementById('prev-page-btn');
+    const nextPageBtn = document.getElementById('next-page-btn');
+    const pageInfo = document.getElementById('page-info');
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+
+    fileInput.addEventListener('change', handleExcelUpload);
+    searchInput.addEventListener('input', () => { currentPage = 1; renderPage(); });
+    statusFilter.addEventListener('change', () => { currentPage = 1; renderPage(); });
+    prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); } });
+    nextPageBtn.addEventListener('click', () => { currentPage++; renderPage(); });
+    batchSubmitBtn.addEventListener('click', handleNextBatch);
+    exportBtn.addEventListener('click', handleExportAndReset);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSession();
+      setupImageModalEvents();
+      lucide.createIcons();
+
+      window.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('image-modal');
+        const isModalVisible = !modal.classList.contains('hidden');
+
+        if (e.key === 'Escape') {
+          closeImageModal();
+          closeVideoModal();
+        } else if (isModalVisible && e.key === 'ArrowLeft') {
+          modalNavigateCarousel('prev');
+        } else if (isModalVisible && e.key === 'ArrowRight') {
+          modalNavigateCarousel('next');
+        }
+      });
+    });
+
+    function loadSession() {
+      const saved = localStorage.getItem('veritas_qa_session');
+      if (saved) {
+        try {
+          rawDataset = JSON.parse(saved);
+          if (rawDataset.length > 0) {
+            exportBtn.disabled = false;
+            renderPage();
+          }
+        } catch (e) {
+          console.error("Failed to restore session", e);
+        }
+      }
+    }
+
+    function saveSession() {
+      localStorage.setItem('veritas_qa_session', JSON.stringify(rawDataset));
+    }
+
+    function handleExcelUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonObject = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+          rawDataset = jsonObject.map((row, idx) => ({
+            ...row,
+            __internal_id: idx + 1,
+            blind_rating: row.blind_rating !== undefined && row.blind_rating !== '' ? Number(row.blind_rating) : '',
+            blind_decision: row.blind_decision || '',
+            blind_notes: row.blind_notes || '',
+            decision_diff: row.decision_diff !== undefined ? row.decision_diff : '',
+            rating_diff: row.rating_diff !== undefined ? row.rating_diff : '',
+            blind_timestamp: row.blind_timestamp || '',
+            blind_auditor: row.blind_auditor || ''
+          }));
+
+          currentPage = 1;
+          saveSession();
+          exportBtn.disabled = false;
+          renderPage();
+        } catch (err) {
+          alert('Error parsing Excel spreadsheet.');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function parseMediaUrls(rawMediaUrl) {
+      if (!rawMediaUrl || typeof rawMediaUrl !== 'string') return [];
+      return rawMediaUrl
+        .split(',')
+        .map(u => u.trim())
+        .filter(u => u && u !== 'NULL');
+    }
+
+    function getFilteredData() {
+      const query = searchInput.value.toLowerCase().trim();
+      const status = statusFilter.value;
+
+      return rawDataset.filter(item => {
+        const matchesSearch = 
+          String(item.id || '').toLowerCase().includes(query) ||
+          String(item.title || '').toLowerCase().includes(query) ||
+          String(item.content || '').toLowerCase().includes(query);
+
+        let matchesStatus = true;
+        const isSubmitted = item.blind_rating !== '' && item.blind_rating !== undefined;
+        if (status === 'PENDING') matchesStatus = !isSubmitted;
+        if (status === 'CONFIRMED') matchesStatus = isSubmitted;
+
+        return matchesSearch && matchesStatus;
+      });
+    }
+
+    function renderPage() {
+      const filtered = getFilteredData();
+      const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const pageItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+      pageInfo.innerText = `Batch ${currentPage} of ${totalPages}`;
+      prevPageBtn.disabled = currentPage === 1;
+      nextPageBtn.disabled = currentPage === totalPages;
+
+      updateOverallStats();
+      renderCards(pageItems);
+      checkPageConfirmationStatus(pageItems);
+    }
+
+    function updateOverallStats() {
+      const total = rawDataset.length;
+      const completed = rawDataset.filter(i => i.blind_rating !== '' && i.blind_rating !== undefined).length;
+      const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-completed').innerText = completed;
+      document.getElementById('stat-percent').innerText = `${percent}%`;
+      document.getElementById('stat-progress-bar').style.width = `${percent}%`;
+    }
+
+    function checkPageConfirmationStatus(pageItems) {
+      const allRated = pageItems.length > 0 && pageItems.every(i => i.blind_rating !== '' && i.blind_rating !== undefined);
+      const ratedCount = pageItems.filter(i => i.blind_rating !== '' && i.blind_rating !== undefined).length;
+
+      document.getElementById('stat-page-confirmed').innerText = `${ratedCount} / ${pageItems.length}`;
+      batchSubmitBtn.disabled = !allRated;
+      
+      const statusText = document.getElementById('bottom-bar-status');
+      if (pageItems.length === 0) {
+        statusText.innerText = "No cases to display in this batch.";
+        statusText.className = "text-xs font-semibold text-slate-600 dark:text-slate-300";
+      } else if (allRated) {
+        statusText.innerText = "All 12 cases on this page are rated! Ready to submit.";
+        statusText.className = "text-xs font-semibold text-emerald-700 dark:text-emerald-400";
+      } else {
+        statusText.innerText = `Rated ${ratedCount} of ${pageItems.length} cases on this page. Rate all to continue.`;
+        statusText.className = "text-xs font-semibold text-amber-700 dark:text-amber-400";
+      }
+    }
+
+    function changeCarouselSlide(internalId, direction) {
+      const item = rawDataset.find(i => i.__internal_id === internalId);
+      if (!item) return;
+      const urls = parseMediaUrls(item.media_url);
+      if (urls.length <= 1) return;
+
+      if (carouselState[internalId] === undefined) carouselState[internalId] = 0;
+      let currentIndex = carouselState[internalId];
+
+      if (direction === 'next') {
+        currentIndex = (currentIndex + 1) % urls.length;
+      } else if (direction === 'prev') {
+        currentIndex = (currentIndex - 1 + urls.length) % urls.length;
+      } else if (typeof direction === 'number') {
+        currentIndex = direction;
+      }
+
+      carouselState[internalId] = currentIndex;
+      renderPage();
+    }
+
+    function renderCards(items) {
+      cardsContainer.innerHTML = '';
+
+      if (items.length === 0) {
+        cardsContainer.innerHTML = `
+          <div class="col-span-full py-16 text-center text-slate-500 glass-panel rounded-2xl">
+            <i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+            <p class="text-sm font-semibold">No cases found matching criteria</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      items.forEach(item => {
+        const card = document.createElement('div');
+        const hasRated = item.blind_rating !== '' && item.blind_rating !== undefined;
+
+        card.className = `glass-card rounded-2xl flex flex-col overflow-hidden card-transition border ${
+          hasRated ? 'border-sage-500/60 bg-white/95 ring-1 ring-sage-500/20' : 'border-slate-200/80 dark:border-slate-700'
+        } relative`;
+
+        const urls = parseMediaUrls(item.media_url);
+
+        let mediaHtml = `
+          <div class="w-full h-48 bg-slate-100/50 dark:bg-slate-900/50 flex items-center justify-center text-xs text-slate-400 border-b border-slate-200/50">
+            <span class="flex items-center gap-1.5"><i data-lucide="image-off" class="w-4 h-4"></i> No Attachment</span>
+          </div>
+        `;
+
+        if (urls.length === 1) {
+          const mediaUrl = urls[0];
+          const lower = mediaUrl.toLowerCase();
+          if (lower.match(/\.(jpeg|jpg|gif|png|webp)/)) {
+            mediaHtml = `
+              <div class="w-full h-48 bg-slate-900 flex items-center justify-center relative group overflow-hidden border-b border-slate-200/50 cursor-pointer"
+                   onclick="openImageModal('${mediaUrl}', ${item.__internal_id})">
+                <img src="${mediaUrl}" alt="Attachment" class="max-h-full max-w-full object-contain transition-transform group-hover:scale-105"
+                     onerror="this.parentElement.innerHTML='<div class=\'text-xs text-rose-400 p-2 text-center\'>Failed to load image</div>'">
+                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+                  <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
+                </div>
+              </div>
+            `;
+          } else if (lower.match(/\.(mp4|m3u8|webm)/)) {
+            mediaHtml = `
+              <div class="w-full h-48 bg-slate-950 flex flex-col items-center justify-center border-b border-slate-200/50 gap-2 p-4">
+                <div class="p-3 rounded-full bg-sage-700/80 text-white shadow-lg cursor-pointer hover:scale-110 transition-transform"
+                     onclick="openVideoModal('${mediaUrl}')">
+                  <i data-lucide="play" class="w-6 h-6 ml-0.5"></i>
+                </div>
+                <span class="text-[11px] text-slate-300 font-medium">Click to Launch Stream</span>
+              </div>
+            `;
+          }
+        } else if (urls.length > 1) {
+          if (carouselState[item.__internal_id] === undefined) {
+            carouselState[item.__internal_id] = 0;
+          }
+          const activeIndex = carouselState[item.__internal_id];
+          const currentUrl = urls[activeIndex];
+          const lower = currentUrl.toLowerCase();
+
+          let activeSlideContent = '';
+          if (lower.match(/\.(jpeg|jpg|gif|png|webp)/)) {
+            activeSlideContent = `
+              <div class="w-full h-full flex items-center justify-center cursor-pointer group/zoom" onclick="openImageModal('${currentUrl}', ${item.__internal_id})">
+                <img src="${currentUrl}" alt="Attachment ${activeIndex + 1}" class="max-h-full max-w-full object-contain transition-transform group-hover/zoom:scale-105">
+                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover/zoom:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+                  <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
+                </div>
+              </div>
+            `;
+          } else {
+            activeSlideContent = `
+              <div class="w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer" onclick="openVideoModal('${currentUrl}')">
+                <div class="p-3 rounded-full bg-sage-700/90 text-white shadow-lg hover:scale-110 transition-transform">
+                  <i data-lucide="play" class="w-6 h-6 ml-0.5"></i>
+                </div>
+                <span class="text-[11px] text-slate-300 font-medium">Launch Video #${activeIndex + 1}</span>
+              </div>
+            `;
+          }
+
+          const dots = urls.map((_, idx) => `
+            <button onclick="changeCarouselSlide(${item.__internal_id}, ${idx})" 
+                    class="h-1.5 rounded-full transition-all ${idx === activeIndex ? 'w-5 bg-emerald-400' : 'w-1.5 bg-white/50 hover:bg-white'}">
+            </button>
+          `).join('');
+
+          mediaHtml = `
+            <div class="w-full h-48 bg-slate-950 border-b border-slate-200/50 relative overflow-hidden group">
+              ${activeSlideContent}
+
+              <button onclick="changeCarouselSlide(${item.__internal_id}, 'prev')" 
+                      class="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-slate-900/80 text-white hover:bg-emerald-600 transition-all opacity-80 group-hover:opacity-100 shadow-lg z-10">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+              </button>
+              <button onclick="changeCarouselSlide(${item.__internal_id}, 'next')" 
+                      class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-slate-900/80 text-white hover:bg-emerald-600 transition-all opacity-80 group-hover:opacity-100 shadow-lg z-10">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
+
+              <div class="absolute top-2 left-2 px-2 py-0.5 bg-black/70 backdrop-blur-md rounded-full text-[10px] font-mono font-bold text-white z-10">
+                ${activeIndex + 1} / ${urls.length}
+              </div>
+
+              <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10 bg-black/40 px-2 py-1 rounded-full backdrop-blur-xs">
+                ${dots}
+              </div>
+            </div>
+          `;
+        }
+
+        const scoreButtons = [0, 1, 2, 3, 4, 5].map(score => {
+          const isSelected = item.blind_rating === score;
+          const activeClass = score === 0 ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-sage-700 text-white border-sage-700 shadow-sm';
+          const inactiveClass = 'bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700';
+          return `
+            <button onclick="setCardRating(${item.__internal_id}, ${score})"
+                    class="flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center justify-center ${isSelected ? activeClass : inactiveClass}">
+              ${score}
+            </button>
+          `;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between px-3.5 py-2 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200/50 text-xs">
+            <span class="font-mono font-bold text-slate-500">ID: ${item.id || item.__internal_id}</span>
+            <span class="${hasRated ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30' : 'bg-amber-500/15 text-amber-700 border-amber-500/30'} text-[10px] font-bold px-2 py-0.5 rounded-full border">
+              ${hasRated ? 'RATED' : 'PENDING'}
+            </span>
+          </div>
+
+          ${mediaHtml}
+
+          <div class="p-3.5 flex-1 flex flex-col gap-2">
+            <h4 class="font-bold text-xs text-slate-900 dark:text-slate-100 line-clamp-1">
+              ${item.title ? escapeHtml(item.title) : '<span class="italic text-slate-400">Untitled</span>'}
+            </h4>
+            <p class="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-3 bg-white/50 dark:bg-slate-900/40 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+              ${item.content ? escapeHtml(item.content) : '<span class="italic text-slate-400">No content text.</span>'}
+            </p>
+          </div>
+
+          <div class="p-3.5 bg-slate-50/70 dark:bg-slate-900/60 border-t border-slate-200/60 flex flex-col gap-2.5">
+            <div class="flex flex-col gap-1.5">
+              <div class="flex justify-between items-center text-[11px] font-semibold text-slate-600 dark:text-slate-300 px-0.5">
+                <span>Rating (0 = Reject, 1-5 = Approve):</span>
+                <span class="font-mono text-sage-700 dark:text-sage-300 font-bold">${item.blind_rating !== '' ? item.blind_rating : 'Not Rated'}</span>
+              </div>
+              <div class="flex gap-1">
+                ${scoreButtons}
+              </div>
+            </div>
+          </div>
+        `;
+
+        cardsContainer.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function setCardRating(internalId, ratingVal) {
+      const item = rawDataset.find(i => i.__internal_id === internalId);
+      if (!item) return;
+
+      item.blind_rating = Number(ratingVal);
+      item.blind_decision = (item.blind_rating === 0) ? 'Reject' : 'Approve';
+
+      // 1. Calculate decision_diff (TRUE / FALSE)
+      const origRemarks = String(item.remarks || "").toLowerCase();
+      let originalDecision = 'Approve';
+      if (origRemarks.includes('reject')) {
+        originalDecision = 'Reject';
+      } else if (origRemarks.includes('labelled')) {
+        originalDecision = 'Approve';
+      }
+      item.decision_diff = (item.blind_decision === originalDecision);
+
+      // 2. Calculate rating_diff (TRUE / FALSE)
+      const origRating = Number(item.content_level) || 0;
+      item.rating_diff = (origRating === item.blind_rating);
+
+      item.blind_auditor = document.getElementById('auditor-id').value.trim() || 'Auditor_01';
+      item.blind_timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+      saveSession();
+      renderPage();
+    }
+
+    function handleNextBatch() {
+      const filtered = getFilteredData();
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const pageItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+      const unrated = pageItems.filter(i => i.blind_rating === '' || i.blind_rating === undefined);
+      if (unrated.length > 0) {
+        alert('Please choose a rating (0 to 5) for all cases on the current page before submitting.');
+        return;
+      }
+
+      saveSession();
+      exportBtn.disabled = false;
+
+      const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderPage();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        alert('All batches submitted successfully! You can now export your Excel report.');
+        renderPage();
+      }
+    }
+
+    function handleExportAndReset() {
+      if (rawDataset.length === 0) return;
+
+      const auditorName = document.getElementById('auditor-id').value.trim() || 'Auditor_01';
+
+      // Sheet 1: Detailed Results (Contains decision_diff and rating_diff columns)
+      const detailedRows = rawDataset.map(item => {
+        const origRemarks = String(item.remarks || "").toLowerCase();
+        let originalDecision = 'Approve';
+        if (origRemarks.includes('reject')) {
+          originalDecision = 'Reject';
+        } else if (origRemarks.includes('labelled')) {
+          originalDecision = 'Approve';
+        }
+
+        const blindRatingNum = item.blind_rating !== '' && item.blind_rating !== undefined ? Number(item.blind_rating) : null;
+        const origRating = Number(item.content_level) || 0;
+
+        return {
+          ...item,
+          decision_diff: blindRatingNum !== null ? (item.blind_decision === originalDecision) : '',
+          rating_diff: blindRatingNum !== null ? (origRating === blindRatingNum) : ''
+        };
+      });
+      const wsDetailed = XLSX.utils.json_to_sheet(detailedRows);
+
+      // Sheet 2: Decision Alignment (decision_diff)
+      const decisionAlignmentRows = rawDataset.map(item => {
+        const origRemarks = String(item.remarks || "").toLowerCase();
+        let originalDecision = 'Approve';
+        if (origRemarks.includes('reject')) {
+          originalDecision = 'Reject';
+        } else if (origRemarks.includes('labelled')) {
+          originalDecision = 'Approve';
+        }
+
+        const blindRatingNum = item.blind_rating !== '' && item.blind_rating !== undefined ? Number(item.blind_rating) : null;
+        const blindDecision = blindRatingNum !== null ? (blindRatingNum === 0 ? 'Reject' : 'Approve') : 'Unreviewed';
+        
+        let diffValue = 'N/A';
+        if (blindRatingNum !== null) {
+          diffValue = (originalDecision === blindDecision); // TRUE or FALSE
+        }
+
+        return {
+          'ID': item.id || item.__internal_id,
+          'Original Remarks': item.remarks || 'N/A',
+          'Original Decision (Inferred)': originalDecision,
+          'Blind Audit Rating': blindRatingNum !== null ? blindRatingNum : 'N/A',
+          'Blind Audit Decision': blindDecision,
+          'decision_diff': diffValue,
+          'Auditor': item.blind_auditor || auditorName,
+          'Timestamp': item.blind_timestamp || 'N/A'
+        };
+      });
+      const wsDecision = XLSX.utils.json_to_sheet(decisionAlignmentRows);
+
+      // Sheet 3: Rating Alignment (rating_diff)
+      const ratingAlignmentRows = rawDataset.map(item => {
+        const originalRating = Number(item.content_level) || 0;
+        const blindRating = item.blind_rating !== "" && item.blind_rating !== undefined ? Number(item.blind_rating) : null;
+        
+        let ratingDiffValue = 'N/A';
+        if (blindRating !== null) {
+          ratingDiffValue = (originalRating === blindRating); // TRUE or FALSE
+        }
+
+        return {
+          'ID': item.id || item.__internal_id,
+          'Original Content Level': originalRating,
+          'Blind Audit Rating': blindRating !== null ? blindRating : 'N/A',
+          'rating_diff': ratingDiffValue,
+          'Auditor': item.blind_auditor || auditorName,
+          'Timestamp': item.blind_timestamp || 'N/A'
+        };
+      });
+      const wsRating = XLSX.utils.json_to_sheet(ratingAlignmentRows);
+
+      // Assemble Workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, wsDetailed, "Detailed Results");
+      XLSX.utils.book_append_sheet(workbook, wsDecision, "decision_diff");
+      XLSX.utils.book_append_sheet(workbook, wsRating, "rating_diff");
+
+      XLSX.writeFile(workbook, `veritas_blind_audit_diff_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+      localStorage.removeItem('veritas_qa_session');
+      rawDataset = [];
+      currentPage = 1;
+      exportBtn.disabled = true;
+      renderPage();
+      alert('Audit report with decision_diff and rating_diff tables successfully exported!');
+    }
+
+    // Modal Image & Carousel Functions
+    let currentImgScale = 1;
+    let currentImgRotate = 0;
+    let currentImgFlipH = 1;
+    let currentImgFlipV = 1;
+
+    function openImageModal(src, internalId = null) {
+      const modal = document.getElementById('image-modal');
+      const img = document.getElementById('image-modal-src');
+      
+      activeModalInternalId = internalId;
+      img.src = src;
+      modal.classList.remove('hidden');
+
+      updateModalCarouselControls();
+      resetImageTransform();
+    }
+
+    function updateModalCarouselControls() {
+      const prevBtn = document.getElementById('modal-prev-btn');
+      const nextBtn = document.getElementById('modal-next-btn');
+      const counterBadge = document.getElementById('modal-counter-badge');
+
+      if (!activeModalInternalId) {
+        prevBtn.classList.add('hidden');
+        nextBtn.classList.add('hidden');
+        counterBadge.classList.add('hidden');
+        return;
+      }
+
+      const item = rawDataset.find(i => i.__internal_id === activeModalInternalId);
+      if (!item) return;
+
+      const urls = parseMediaUrls(item.media_url);
+
+      if (urls.length > 1) {
+        prevBtn.classList.remove('hidden');
+        nextBtn.classList.remove('hidden');
+        counterBadge.classList.remove('hidden');
+
+        const activeIndex = carouselState[activeModalInternalId] || 0;
+        counterBadge.innerText = `${activeIndex + 1} / ${urls.length}`;
+      } else {
+        prevBtn.classList.add('hidden');
+        nextBtn.classList.add('hidden');
+        counterBadge.classList.add('hidden');
+      }
+    }
+
+    function modalNavigateCarousel(direction) {
+      if (!activeModalInternalId) return;
+
+      const item = rawDataset.find(i => i.__internal_id === activeModalInternalId);
+      if (!item) return;
+
+      const urls = parseMediaUrls(item.media_url);
+      if (urls.length <= 1) return;
+
+      let activeIndex = carouselState[activeModalInternalId] || 0;
+
+      if (direction === 'next') {
+        activeIndex = (activeIndex + 1) % urls.length;
+      } else if (direction === 'prev') {
+        activeIndex = (activeIndex - 1 + urls.length) % urls.length;
+      }
+
+      carouselState[activeModalInternalId] = activeIndex;
+      const newUrl = urls[activeIndex];
+
+      if (newUrl.toLowerCase().match(/\.(mp4|m3u8|webm)/)) {
+        closeImageModal();
+        openVideoModal(newUrl);
+        return;
+      }
+
+      document.getElementById('image-modal-src').src = newUrl;
+      updateModalCarouselControls();
+      resetImageTransform();
+      renderPage();
+    }
+
+    function closeImageModal() {
+      document.getElementById('image-modal').classList.add('hidden');
+      activeModalInternalId = null;
+    }
+
+    function zoomImage(delta) {
+      currentImgScale = Math.max(0.2, currentImgScale + delta);
+      applyImageTransform();
+    }
+
+    function rotateImage(deg) {
+      currentImgRotate = (currentImgRotate + deg) % 360;
+      applyImageTransform();
+    }
+
+    function flipImage(axis) {
+      if (axis === 'h') currentImgFlipH *= -1;
+      if (axis === 'v') currentImgFlipV *= -1;
+      applyImageTransform();
+    }
+
+    function resetImageTransform() {
+      currentImgScale = 1;
+      currentImgRotate = 0;
+      currentImgFlipH = 1;
+      currentImgFlipV = 1;
+      applyImageTransform();
+    }
+
+    function applyImageTransform() {
+      const img = document.getElementById('image-modal-src');
+      img.style.transform = `scale(${currentImgScale}) rotate(${currentImgRotate}deg) scaleX(${currentImgFlipH}) scaleY(${currentImgFlipV})`;
+    }
+
+    function setupImageModalEvents() {
+      const viewport = document.getElementById('image-modal-viewport');
+      let isDragging = false;
+      let startX, startY, scrollLeft, scrollTop;
+
+      viewport.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        viewport.classList.add('cursor-grabbing');
+        startX = e.pageX - viewport.offsetLeft;
+        startY = e.pageY - viewport.offsetTop;
+        scrollLeft = viewport.scrollLeft;
+        scrollTop = viewport.scrollTop;
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+        viewport.classList.remove('cursor-grabbing');
+      });
+
+      viewport.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - viewport.offsetLeft;
+        const y = e.pageY - viewport.offsetTop;
+        const walkX = (x - startX) * 1.5;
+        const walkY = (y - startY) * 1.5;
+        viewport.scrollLeft = scrollLeft - walkX;
+        viewport.scrollTop = scrollTop - walkY;
+      });
+    }
+
+    function openVideoModal(url) {
+      const modal = document.getElementById('video-modal');
+      const video = document.getElementById('modal-video-player');
+      modal.classList.remove('hidden');
+
+      if (url.includes('.m3u8')) {
+        if (Hls.isSupported()) {
+          if (hlsInstance) hlsInstance.destroy();
+          hlsInstance = new Hls();
+          hlsInstance.loadSource(url);
+          hlsInstance.attachMedia(video);
+          hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = url;
+          video.play();
+        }
+      } else {
+        video.src = url;
+        video.play();
+      }
+    }
+
+    function closeVideoModal() {
+      const modal = document.getElementById('video-modal');
+      const video = document.getElementById('modal-video-player');
+      video.pause();
+      video.src = '';
+      if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+      }
+      modal.classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
