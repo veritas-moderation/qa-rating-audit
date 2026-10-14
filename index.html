@@ -655,11 +655,12 @@
         const videoId = `card-video-${item.__internal_id}-${activeIndex}`;
         setTimeout(() => initCardVideo(videoId, currentUrl), 50);
         activeSlideContent = `
-          <div class="w-full h-full flex items-center justify-center relative">
-            <video id="${videoId}" controls playsinline preload="metadata" class="w-full h-full object-contain bg-black"></video>
-            <button onclick="openVideoModal('${currentUrl}')" title="Fullscreen" class="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white z-10 transition-colors">
-              <i data-lucide="maximize" class="w-4 h-4"></i>
-            </button>
+          <div class="w-full h-full flex items-center justify-center relative group/zoom cursor-pointer"
+               onclick="openVideoModal('${currentUrl}')">
+            <video id="${videoId}" playsinline preload="metadata" class="w-full h-full object-contain bg-black pointer-events-none"></video>
+            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover/zoom:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+              <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
+            </div>
           </div>
         `;
       }
@@ -742,11 +743,12 @@
             const videoId = `card-video-${item.__internal_id}-0`;
             setTimeout(() => initCardVideo(videoId, mediaUrl), 50);
             mediaHtml = `
-              <div class="w-full h-64 bg-black flex items-center justify-center relative overflow-hidden border-y border-slate-200/50">
-                <video id="${videoId}" controls playsinline preload="metadata" class="w-full h-full object-contain bg-black"></video>
-                <button onclick="openVideoModal('${mediaUrl}')" title="Fullscreen" class="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white z-10 transition-colors">
-                  <i data-lucide="maximize" class="w-4 h-4"></i>
-                </button>
+              <div class="w-full h-64 bg-black flex items-center justify-center relative group overflow-hidden border-y border-slate-200/50 cursor-pointer"
+                   onclick="openVideoModal('${mediaUrl}')">
+                <video id="${videoId}" playsinline preload="metadata" class="w-full h-full object-contain bg-black pointer-events-none"></video>
+                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+                  <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
+                </div>
               </div>
             `;
           }
@@ -773,11 +775,12 @@
             const videoId = `card-video-${item.__internal_id}-${activeIndex}`;
             setTimeout(() => initCardVideo(videoId, currentUrl), 50);
             activeSlideContent = `
-              <div class="w-full h-full flex items-center justify-center relative">
-                <video id="${videoId}" controls playsinline preload="metadata" class="w-full h-full object-contain bg-black"></video>
-                <button onclick="openVideoModal('${currentUrl}')" title="Fullscreen" class="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white z-10 transition-colors">
-                  <i data-lucide="maximize" class="w-4 h-4"></i>
-                </button>
+              <div class="w-full h-full flex items-center justify-center relative group/zoom cursor-pointer"
+                   onclick="openVideoModal('${currentUrl}')">
+                <video id="${videoId}" playsinline preload="metadata" class="w-full h-full object-contain bg-black pointer-events-none"></video>
+                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover/zoom:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+                  <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
+                </div>
               </div>
             `;
           }
