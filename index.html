@@ -545,7 +545,59 @@
       }
 
       carouselState[internalId] = currentIndex;
-      renderPage();
+      updateCardCarousel(internalId);
+    }
+
+    function updateCardCarousel(internalId) {
+      const item = rawDataset.find(i => i.__internal_id === internalId);
+      if (!item) return;
+      const card = document.querySelector(`[data-internal-id="${internalId}"]`);
+      if (!card) return;
+
+      const mediaContainer = card.querySelector('.media-container');
+      if (!mediaContainer) return;
+
+      const urls = parseMediaUrls(item.media_url);
+      if (urls.length <= 1) return;
+
+      const activeIndex = carouselState[internalId] || 0;
+      const currentUrl = urls[activeIndex];
+      const lower = currentUrl.toLowerCase();
+
+      let activeSlideContent = '';
+      if (lower.match(/\.(jpeg|jpg|gif|png|webp)/)) {
+        activeSlideContent = `
+          <div class="w-full h-full flex items-center justify-center cursor-pointer group/zoom" onclick="openImageModal('${currentUrl}', ${item.__internal_id})">
+            <img src="${currentUrl}" alt="Attachment ${activeIndex + 1}" class="max-h-full max-w-full object-contain transition-transform group-hover/zoom:scale-105">
+            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover/zoom:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+              <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
+            </div>
+          </div>
+        `;
+      } else {
+        activeSlideContent = `
+          <div class="w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer" onclick="openVideoModal('${currentUrl}')">
+            <div class="p-3 rounded-full bg-sage-700/80 text-white shadow-lg hover:scale-110 transition-transform">
+              <i data-lucide="play" class="w-6 h-6 ml-0.5"></i>
+            </div>
+            <span class="text-[11px] text-slate-300 font-medium">Click to Launch Stream</span>
+          </div>
+        `;
+      }
+
+      mediaContainer.innerHTML = `
+        ${activeSlideContent}
+        <div class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-mono font-bold text-white z-10">
+          ${activeIndex + 1} / ${urls.length}
+        </div>
+        <button onclick="event.stopPropagation(); changeCarouselSlide(${item.__internal_id}, 'prev')" class="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white transition-all opacity-0 group-hover:opacity-100 z-10">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button onclick="event.stopPropagation(); changeCarouselSlide(${item.__internal_id}, 'next')" class="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white transition-all opacity-0 group-hover:opacity-100 z-10">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      `;
+      lucide.createIcons({ props: {}, name: undefined }, mediaContainer);
     }
 
     function renderCards(items) {
@@ -566,6 +618,7 @@
         const card = document.createElement('div');
         const hasRated = item.blind_rating !== '' && item.blind_rating !== undefined;
 
+        card.setAttribute('data-internal-id', item.__internal_id);
         card.className = `glass-card rounded-2xl flex flex-col overflow-hidden card-transition border ${
           hasRated ? 'border-sage-500/60 bg-white/95 ring-1 ring-sage-500/20' : 'border-slate-200/80 dark:border-slate-700'
         } relative`;
@@ -633,7 +686,7 @@
           }
 
           mediaHtml = `
-            <div class="w-full h-48 bg-slate-950 flex items-center justify-center relative border-b border-slate-200/50 overflow-hidden group">
+            <div class="media-container w-full h-48 bg-slate-950 flex items-center justify-center relative border-b border-slate-200/50 overflow-hidden group">
               ${activeSlideContent}
               <div class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-mono font-bold text-white z-10">
                 ${activeIndex + 1} / ${urls.length}
@@ -658,7 +711,7 @@
                 </span>
                 <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100 mt-1 line-clamp-1">${item.title || 'Untitled Case'}</h4>
               </div>
-              <span class="text-[11px] font-semibold px-2 py-0.5 rounded ${hasRated ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}">
+              <span class="status-badge text-[11px] font-semibold px-2 py-0.5 rounded ${hasRated ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}">
                 ${hasRated ? 'Rated' : 'Pending'}
               </span>
             </div>
@@ -671,11 +724,11 @@
             <div class="mt-auto pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-col gap-2">
               <div class="flex items-center justify-between">
                 <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Blind Rating (0-5):</label>
-                <span class="text-xs font-mono font-bold text-sage-700 dark:text-sage-300 rating-display-${item.__internal_id}">${item.blind_rating !== '' ? item.blind_rating : '-'}</span>
+                <span class="rating-display text-xs font-mono font-bold text-sage-700 dark:text-sage-300">${item.blind_rating !== '' ? item.blind_rating : '-'}</span>
               </div>
               <div class="flex items-center gap-1 justify-between">
                 ${[0, 1, 2, 3, 4, 5].map(score => `
-                  <button onclick="setBlindRating(${item.__internal_id},${score})"
+                  <button data-score="${score}" onclick="setBlindRating(${item.__internal_id},${score})"
                           class="w-8 h-8 rounded-lg font-bold text-xs transition-all ${
                             item.blind_rating === score 
                               ? 'bg-sage-700 text-white shadow-md shadow-sage-900/20 scale-105' 
@@ -714,7 +767,39 @@
       }
 
       saveSession();
-      renderPage();
+
+      const card = document.querySelector(`[data-internal-id="${internalId}"]`);
+      if (card) {
+        card.className = `glass-card rounded-2xl flex flex-col overflow-hidden card-transition border border-sage-500/60 bg-white/95 ring-1 ring-sage-500/20 relative`;
+
+        const badge = card.querySelector('.status-badge');
+        if (badge) {
+          badge.className = 'status-badge text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400';
+          badge.innerText = 'Rated';
+        }
+
+        const ratingDisplay = card.querySelector('.rating-display');
+        if (ratingDisplay) {
+          ratingDisplay.innerText = score;
+        }
+
+        const buttons = card.querySelectorAll('button[data-score]');
+        buttons.forEach(btn => {
+          const btnScore = Number(btn.getAttribute('data-score'));
+          if (btnScore === score) {
+            btn.className = 'w-8 h-8 rounded-lg font-bold text-xs transition-all bg-sage-700 text-white shadow-md shadow-sage-900/20 scale-105';
+          } else {
+            btn.className = 'w-8 h-8 rounded-lg font-bold text-xs transition-all bg-white/80 dark:bg-slate-800 hover:bg-sage-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700';
+          }
+        });
+      }
+
+      const filtered = getFilteredData();
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const pageItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+      updateOverallStats();
+      checkPageConfirmationStatus(pageItems);
     }
 
     function setBlindNotes(internalId, notes) {
