@@ -40,6 +40,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+    import { getFirestore, doc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA5uuRGJ44JEb26i3ZRoP-bACn8XzdkI_c",
@@ -53,8 +54,15 @@
 
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
     window.firebaseApp = app;
     window.firebaseAnalytics = analytics;
+    window.firebaseDb = db;
+    window.firestoreDoc = doc;
+    window.firestoreOnSnapshot = onSnapshot;
+    window.firestoreSetDoc = setDoc;
+    window.firestoreDeleteDoc = deleteDoc;
   </script>
   <style>
     ::-webkit-scrollbar {
@@ -425,9 +433,27 @@
       history.pushState(null, null, location.href);
     });
 
+    const tabId = Math.random().toString(36).substring(2, 9);
+    const bc = new BroadcastChannel('veritas_qa_channel');
+    bc.onmessage = (event) => {
+      if (event.data && event.data.type === 'DATASET_UPDATE' && event.data.senderId !== tabId) {
+        rawDataset = event.data.items || [];
+        if (rawDataset.length > 0) {
+          localStorage.setItem('veritas_qa_session', JSON.stringify(rawDataset));
+          exportBtn.disabled = false;
+        } else {
+          localStorage.removeItem('veritas_qa_session');
+          exportBtn.disabled = true;
+          currentPage = 1;
+        }
+        renderPage();
+      }
+    };
+
     window.addEventListener('DOMContentLoaded', () => {
       loadSession();
       setupImageModalEvents();
+      initFirestoreListener();
       lucide.createIcons();
 
       window.addEventListener('keydown', (e) => {
@@ -444,6 +470,65 @@
         }
       });
     });
+
+    let isLocalUpdate = false;
+
+    function initFirestoreListener() {
+      if (!window.firebaseDb) {
+        setTimeout(initFirestoreListener, 100);
+        return;
+      }
+      try {
+        const datasetRef = window.firestoreDoc(window.firebaseDb, 'veritas_qa', 'active_dataset');
+        window.firestoreOnSnapshot(datasetRef, (snapshot) => {
+          if (snapshot.metadata && snapshot.metadata.hasPendingWrites) {
+            return;
+          }
+          if (isLocalUpdate) {
+            isLocalUpdate = false;
+            return;
+          }
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            if (data && Array.isArray(data.items)) {
+              rawDataset = data.items;
+              localStorage.setItem('veritas_qa_session', JSON.stringify(rawDataset));
+              exportBtn.disabled = rawDataset.length === 0;
+              renderPage();
+            }
+          } else {
+            rawDataset = [];
+            localStorage.removeItem('veritas_qa_session');
+            exportBtn.disabled = true;
+            currentPage = 1;
+            renderPage();
+          }
+        }, (error) => {
+          console.warn("Firestore real-time listener error:", error);
+        });
+      } catch (err) {
+        console.warn("Could not setup Firestore listener:", err);
+      }
+    }
+
+    async function syncDatasetToFirestore() {
+      if (typeof bc !== 'undefined') {
+        bc.postMessage({ type: 'DATASET_UPDATE', items: rawDataset, senderId: tabId });
+      }
+      if (!window.firebaseDb) return;
+      try {
+        isLocalUpdate = true;
+        const datasetRef = window.firestoreDoc(window.firebaseDb, 'veritas_qa', 'active_dataset');
+        if (rawDataset.length > 0) {
+          await window.firestoreSetDoc(datasetRef, { items: rawDataset, updatedAt: new Date().toISOString() });
+        } else {
+          await window.firestoreDeleteDoc(datasetRef);
+        }
+      } catch (err) {
+        isLocalUpdate = false;
+        console.warn("Firestore dataset sync error:", err);
+      }
+    }
 
     function destroyCardVideoInstances() {
       Object.keys(cardHlsInstances).forEach(id => {
@@ -521,6 +606,7 @@
 
           currentPage = 1;
           saveSession();
+          syncDatasetToFirestore();
           exportBtn.disabled = false;
           renderPage();
         } catch (err) {
@@ -969,6 +1055,7 @@
       }
 
       saveSession();
+      syncDatasetToFirestore();
       updateCardUI(internalId);
       updateOverallStats();
       checkPageConfirmationStatus(getCurrentPageBatch());
@@ -986,11 +1073,13 @@
       item.auditor = document.getElementById('auditor-id').value || 'Carlo';
 
       saveSession();
+      syncDatasetToFirestore();
       updateCardUI(internalId);
       updateOverallStats();
       checkPageConfirmationStatus(getCurrentPageBatch());
     }
 
+    let notesTimeout = null;
     function setNotes(internalId, notes) {
       const item = rawDataset.find(i => i.__internal_id === internalId);
       if (!item) return;
@@ -998,6 +1087,11 @@
       saveSession();
       updateCardUI(internalId);
       checkPageConfirmationStatus(getCurrentPageBatch());
+
+      if (notesTimeout) clearTimeout(notesTimeout);
+      notesTimeout = setTimeout(() => {
+        syncDatasetToFirestore();
+      }, 400);
     }
 
     function submitCurrentPageCases(pageItems) {
@@ -1007,6 +1101,7 @@
         i.auditor = currentAuditor;
       });
       saveSession();
+      syncDatasetToFirestore();
     }
 
     function handleNextBatch() {
@@ -1134,6 +1229,7 @@
       // Reset state after extracting data
       rawDataset = [];
       localStorage.removeItem('veritas_qa_session');
+      syncDatasetToFirestore();
       exportBtn.disabled = true;
       currentPage = 1;
       renderPage();
