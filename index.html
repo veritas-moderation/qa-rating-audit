@@ -348,7 +348,7 @@
     let currentPage = 1;
     const ITEMS_PER_PAGE = 12;
     let hlsInstance = null;
-    let carouselState = {}; // Stores current slide index per internal ID
+    let carouselState = {};
     let activeModalInternalId = null;
 
     let imgScale = 1;
@@ -624,83 +624,72 @@
           } else {
             activeSlideContent = `
               <div class="w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer" onclick="openVideoModal('${currentUrl}')">
-                <div class="p-3 rounded-full bg-sage-700/90 text-white shadow-lg hover:scale-110 transition-transform">
+                <div class="p-3 rounded-full bg-sage-700/80 text-white shadow-lg hover:scale-110 transition-transform">
                   <i data-lucide="play" class="w-6 h-6 ml-0.5"></i>
                 </div>
-                <span class="text-[11px] text-slate-300 font-medium">Launch Video #${activeIndex + 1}</span>
+                <span class="text-[11px] text-slate-300 font-medium">Click to Launch Stream</span>
               </div>
             `;
           }
 
-          const dots = urls.map((_, idx) => `
-            <button onclick="changeCarouselSlide(${item.__internal_id}, ${idx})" 
-                    class="h-1.5 rounded-full transition-all ${idx === activeIndex ? 'w-5 bg-emerald-400' : 'w-1.5 bg-white/50 hover:bg-white'}">
-            </button>
-          `).join('');
-
           mediaHtml = `
-            <div class="w-full h-48 bg-slate-950 border-b border-slate-200/50 relative overflow-hidden group">
+            <div class="w-full h-48 bg-slate-950 flex items-center justify-center relative border-b border-slate-200/50 overflow-hidden group">
               ${activeSlideContent}
-
-              <button onclick="changeCarouselSlide(${item.__internal_id}, 'prev')" 
-                      class="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-slate-900/80 text-white hover:bg-emerald-600 transition-all opacity-80 group-hover:opacity-100 shadow-lg z-10">
-                <i data-lucide="chevron-left" class="w-4 h-4"></i>
-              </button>
-              <button onclick="changeCarouselSlide(${item.__internal_id}, 'next')" 
-                      class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-slate-900/80 text-white hover:bg-emerald-600 transition-all opacity-80 group-hover:opacity-100 shadow-lg z-10">
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-              </button>
-
-              <div class="absolute top-2 left-2 px-2 py-0.5 bg-black/70 backdrop-blur-md rounded-full text-[10px] font-mono font-bold text-white z-10">
+              <div class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-mono font-bold text-white z-10">
                 ${activeIndex + 1} / ${urls.length}
               </div>
-
-              <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10 bg-black/40 px-2 py-1 rounded-full backdrop-blur-xs">
-                ${dots}
-              </div>
+              <button onclick="event.stopPropagation(); changeCarouselSlide(${item.__internal_id}, 'prev')" class="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white transition-all opacity-0 group-hover:opacity-100 z-10">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+              </button>
+              <button onclick="event.stopPropagation(); changeCarouselSlide(${item.__internal_id}, 'next')" class="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white transition-all opacity-0 group-hover:opacity-100 z-10">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
             </div>
           `;
         }
 
-        const scoreButtons = [0, 1, 2, 3, 4, 5].map(score => {
-          const isSelected = item.blind_rating === score;
-          const activeClass = score === 0 ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-sage-700 text-white border-sage-700 shadow-sm';
-          const inactiveClass = 'bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700';
-          return `
-            <button onclick="setCardRating(${item.__internal_id}, ${score})"
-                    class="flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center justify-center ${isSelected ? activeClass : inactiveClass}">
-              ${score}
-            </button>
-          `;
-        }).join('');
-
         card.innerHTML = `
-          <div class="flex items-center justify-between px-3.5 py-2 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200/50 text-xs">
-            <span class="font-mono font-bold text-slate-500">ID: ${item.id || item.__internal_id}</span>
-            <span class="${hasRated ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30' : 'bg-amber-500/15 text-amber-700 border-amber-500/30'} text-[10px] font-bold px-2 py-0.5 rounded-full border">
-              ${hasRated ? 'RATED' : 'PENDING'}
-            </span>
-          </div>
-
           ${mediaHtml}
-
-          <div class="p-3.5 flex-1 flex flex-col gap-2">
-            <h4 class="font-bold text-xs text-slate-900 dark:text-slate-100 line-clamp-1">
-              ${item.title ? escapeHtml(item.title) : '<span class="italic text-slate-400">Untitled</span>'}
-            </h4>
-            <p class="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-3 bg-white/50 dark:bg-slate-900/40 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-              ${item.content ? escapeHtml(item.content) : '<span class="italic text-slate-400">No content text.</span>'}
-            </p>
-          </div>
-
-          <div class="p-3.5 bg-slate-50/70 dark:bg-slate-900/60 border-t border-slate-200/60 flex flex-col gap-2.5">
-            <div class="flex flex-col gap-1.5">
-              <div class="flex justify-between items-center text-[11px] font-semibold text-slate-600 dark:text-slate-300 px-0.5">
-                <span>Rating (0 = Reject, 1-5 = Approve):</span>
-                <span class="font-mono text-sage-700 dark:text-sage-300 font-bold">${item.blind_rating !== '' ? item.blind_rating : 'Not Rated'}</span>
+          <div class="p-4 flex flex-col flex-1 gap-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[10px] font-mono font-bold px-2 py-0.5 bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded">
+                  ID: ${item.id || item.__internal_id}
+                </span>
+                <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100 mt-1 line-clamp-1">${item.title || 'Untitled Case'}</h4>
               </div>
-              <div class="flex gap-1">
-                ${scoreButtons}
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded ${hasRated ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}">
+                ${hasRated ? 'Rated' : 'Pending'}
+              </span>
+            </div>
+
+            <div class="text-xs text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 max-h-24 overflow-y-auto">
+              <p class="whitespace-pre-wrap break-words">${item.content || 'No content description available.'}</p>
+            </div>
+
+            <!-- Blind Rating Controls -->
+            <div class="mt-auto pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Blind Rating (0-5):</label>
+                <span class="text-xs font-mono font-bold text-sage-700 dark:text-sage-300 rating-display-${item.__internal_id}">${item.blind_rating !== '' ? item.blind_rating : '-'}</span>
+              </div>
+              <div class="flex items-center gap-1 justify-between">
+                ${[0, 1, 2, 3, 4, 5].map(score => `
+                  <button onclick="setBlindRating(${item.__internal_id},${score})"
+                          class="w-8 h-8 rounded-lg font-bold text-xs transition-all ${
+                            item.blind_rating === score 
+                              ? 'bg-sage-700 text-white shadow-md shadow-sage-900/20 scale-105' 
+                              : 'bg-white/80 dark:bg-slate-800 hover:bg-sage-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
+                          }">
+                    ${score}
+                  </button>
+                `).join('')}
+              </div>
+
+              <div class="mt-1">
+                <input type="text" placeholder="Add blind audit notes..." value="${item.blind_notes || ''}"
+                       oninput="setBlindNotes(${item.__internal_id}, this.value)"
+                       class="w-full px-3 py-1.5 text-xs bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500">
               </div>
             </div>
           </div>
@@ -712,193 +701,86 @@
       lucide.createIcons();
     }
 
-    function setCardRating(internalId, ratingVal) {
+    function setBlindRating(internalId, score) {
       const item = rawDataset.find(i => i.__internal_id === internalId);
       if (!item) return;
 
-      item.blind_rating = Number(ratingVal);
-      item.blind_decision = (item.blind_rating === 0) ? 'Reject' : 'Approve';
-
-      // 1. Calculate decision_diff (TRUE / FALSE)
-      const origRemarks = String(item.remarks || "").toLowerCase();
-      let originalDecision = 'Approve';
-      if (origRemarks.includes('reject')) {
-        originalDecision = 'Reject';
-      } else if (origRemarks.includes('labelled')) {
-        originalDecision = 'Approve';
-      }
-      item.decision_diff = (item.blind_decision === originalDecision);
-
-      // 2. Calculate rating_diff (TRUE / FALSE)
-      const origRating = Number(item.content_level) || 0;
-      item.rating_diff = (origRating === item.blind_rating);
-
+      item.blind_rating = score;
+      item.blind_timestamp = new Date().toISOString();
       item.blind_auditor = document.getElementById('auditor-id').value.trim() || 'Auditor_01';
-      item.blind_timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+      if (item.rating !== undefined && item.rating !== '') {
+        item.rating_diff = Number(score) - Number(item.rating);
+      }
 
       saveSession();
       renderPage();
     }
 
+    function setBlindNotes(internalId, notes) {
+      const item = rawDataset.find(i => i.__internal_id === internalId);
+      if (!item) return;
+      item.blind_notes = notes;
+      saveSession();
+    }
+
     function handleNextBatch() {
       const filtered = getFilteredData();
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-      const pageItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-      const unrated = pageItems.filter(i => i.blind_rating === '' || i.blind_rating === undefined);
-      if (unrated.length > 0) {
-        alert('Please choose a rating (0 to 5) for all cases on the current page before submitting.');
-        return;
-      }
-
-      saveSession();
-      exportBtn.disabled = false;
-
       const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
       if (currentPage < totalPages) {
         currentPage++;
         renderPage();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        alert('All batches submitted successfully! You can now export your Excel report.');
-        renderPage();
+        alert("You have reached the last batch of this view.");
       }
     }
 
     function handleExportAndReset() {
-      if (rawDataset.length === 0) return;
-
-      const auditorName = document.getElementById('auditor-id').value.trim() || 'Auditor_01';
-
-      // Sheet 1: Detailed Results (Contains decision_diff and rating_diff columns)
-      const detailedRows = rawDataset.map(item => {
-        const origRemarks = String(item.remarks || "").toLowerCase();
-        let originalDecision = 'Approve';
-        if (origRemarks.includes('reject')) {
-          originalDecision = 'Reject';
-        } else if (origRemarks.includes('labelled')) {
-          originalDecision = 'Approve';
-        }
-
-        const blindRatingNum = item.blind_rating !== '' && item.blind_rating !== undefined ? Number(item.blind_rating) : null;
-        const origRating = Number(item.content_level) || 0;
-
-        return {
-          ...item,
-          decision_diff: blindRatingNum !== null ? (item.blind_decision === originalDecision) : '',
-          rating_diff: blindRatingNum !== null ? (origRating === blindRatingNum) : ''
-        };
-      });
-      const wsDetailed = XLSX.utils.json_to_sheet(detailedRows);
-
-      // Sheet 2: Decision Alignment (decision_diff)
-      const decisionAlignmentRows = rawDataset.map(item => {
-        const origRemarks = String(item.remarks || "").toLowerCase();
-        let originalDecision = 'Approve';
-        if (origRemarks.includes('reject')) {
-          originalDecision = 'Reject';
-        } else if (origRemarks.includes('labelled')) {
-          originalDecision = 'Approve';
-        }
-
-        const blindRatingNum = item.blind_rating !== '' && item.blind_rating !== undefined ? Number(item.blind_rating) : null;
-        const blindDecision = blindRatingNum !== null ? (blindRatingNum === 0 ? 'Reject' : 'Approve') : 'Unreviewed';
-        
-        let diffValue = 'N/A';
-        if (blindRatingNum !== null) {
-          diffValue = (originalDecision === blindDecision); // TRUE or FALSE
-        }
-
-        return {
-          'ID': item.id || item.__internal_id,
-          'Original Remarks': item.remarks || 'N/A',
-          'Original Decision (Inferred)': originalDecision,
-          'Blind Audit Rating': blindRatingNum !== null ? blindRatingNum : 'N/A',
-          'Blind Audit Decision': blindDecision,
-          'decision_diff': diffValue,
-          'Auditor': item.blind_auditor || auditorName,
-          'Timestamp': item.blind_timestamp || 'N/A'
-        };
-      });
-      const wsDecision = XLSX.utils.json_to_sheet(decisionAlignmentRows);
-
-      // Sheet 3: Rating Alignment (rating_diff)
-      const ratingAlignmentRows = rawDataset.map(item => {
-        const originalRating = Number(item.content_level) || 0;
-        const blindRating = item.blind_rating !== "" && item.blind_rating !== undefined ? Number(item.blind_rating) : null;
-        
-        let ratingDiffValue = 'N/A';
-        if (blindRating !== null) {
-          ratingDiffValue = (originalRating === blindRating); // TRUE or FALSE
-        }
-
-        return {
-          'ID': item.id || item.__internal_id,
-          'Original Content Level': originalRating,
-          'Blind Audit Rating': blindRating !== null ? blindRating : 'N/A',
-          'rating_diff': ratingDiffValue,
-          'Auditor': item.blind_auditor || auditorName,
-          'Timestamp': item.blind_timestamp || 'N/A'
-        };
-      });
-      const wsRating = XLSX.utils.json_to_sheet(ratingAlignmentRows);
-
-      // Assemble Workbook
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, wsDetailed, "Detailed Results");
-      XLSX.utils.book_append_sheet(workbook, wsDecision, "decision_diff");
-      XLSX.utils.book_append_sheet(workbook, wsRating, "rating_diff");
-
-      XLSX.writeFile(workbook, `veritas_blind_audit_diff_${new Date().toISOString().slice(0,10)}.xlsx`);
-
-      localStorage.removeItem('veritas_qa_session');
-      rawDataset = [];
-      currentPage = 1;
-      exportBtn.disabled = true;
-      renderPage();
-      alert('Audit report with decision_diff and rating_diff tables successfully exported!');
-    }
-
-    // Modal Image & Carousel Functions
-    let currentImgScale = 1;
-    let currentImgRotate = 0;
-    let currentImgFlipH = 1;
-    let currentImgFlipV = 1;
-
-    function openImageModal(src, internalId = null) {
-      const modal = document.getElementById('image-modal');
-      const img = document.getElementById('image-modal-src');
-      
-      activeModalInternalId = internalId;
-      img.src = src;
-      modal.classList.remove('hidden');
-
-      updateModalCarouselControls();
-      resetImageTransform();
-    }
-
-    function updateModalCarouselControls() {
-      const prevBtn = document.getElementById('modal-prev-btn');
-      const nextBtn = document.getElementById('modal-next-btn');
-      const counterBadge = document.getElementById('modal-counter-badge');
-
-      if (!activeModalInternalId) {
-        prevBtn.classList.add('hidden');
-        nextBtn.classList.add('hidden');
-        counterBadge.classList.add('hidden');
+      if (rawDataset.length === 0) {
+        alert("No data to export.");
         return;
       }
 
+      const worksheet = XLSX.utils.json_to_sheet(rawDataset);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Audited Results");
+
+      const auditorId = document.getElementById('auditor-id').value.trim() || 'Auditor';
+      const dateStr = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, `Veritas_QA_BlindAudit_${auditorId}_${dateStr}.xlsx`);
+    }
+
+    // Modal Image Functions
+    function openImageModal(url, internalId) {
+      activeModalInternalId = internalId;
+      const modal = document.getElementById('image-modal');
+      const img = document.getElementById('image-modal-src');
+      img.src = url;
+      resetImageTransform();
+      modal.classList.remove('hidden');
+      updateModalCarouselState();
+    }
+
+    function closeImageModal() {
+      const modal = document.getElementById('image-modal');
+      modal.classList.add('hidden');
+      activeModalInternalId = null;
+    }
+
+    function updateModalCarouselState() {
+      if (!activeModalInternalId) return;
       const item = rawDataset.find(i => i.__internal_id === activeModalInternalId);
       if (!item) return;
-
       const urls = parseMediaUrls(item.media_url);
+      const prevBtn = document.getElementById('modal-prev-btn');
+      const nextBtn = document.getElementById('modal-next-btn');
+      const counterBadge = document.getElementById('modal-counter-badge');
 
       if (urls.length > 1) {
         prevBtn.classList.remove('hidden');
         nextBtn.classList.remove('hidden');
         counterBadge.classList.remove('hidden');
-
         const activeIndex = carouselState[activeModalInternalId] || 0;
         counterBadge.innerText = `${activeIndex + 1} / ${urls.length}`;
       } else {
@@ -910,101 +792,80 @@
 
     function modalNavigateCarousel(direction) {
       if (!activeModalInternalId) return;
-
       const item = rawDataset.find(i => i.__internal_id === activeModalInternalId);
       if (!item) return;
-
       const urls = parseMediaUrls(item.media_url);
       if (urls.length <= 1) return;
 
-      let activeIndex = carouselState[activeModalInternalId] || 0;
+      if (carouselState[activeModalInternalId] === undefined) carouselState[activeModalInternalId] = 0;
+      let idx = carouselState[activeModalInternalId];
 
       if (direction === 'next') {
-        activeIndex = (activeIndex + 1) % urls.length;
-      } else if (direction === 'prev') {
-        activeIndex = (activeIndex - 1 + urls.length) % urls.length;
+        idx = (idx + 1) % urls.length;
+      } else {
+        idx = (idx - 1 + urls.length) % urls.length;
       }
 
-      carouselState[activeModalInternalId] = activeIndex;
-      const newUrl = urls[activeIndex];
-
-      if (newUrl.toLowerCase().match(/\.(mp4|m3u8|webm)/)) {
-        closeImageModal();
-        openVideoModal(newUrl);
-        return;
-      }
-
-      document.getElementById('image-modal-src').src = newUrl;
-      updateModalCarouselControls();
+      carouselState[activeModalInternalId] = idx;
+      const img = document.getElementById('image-modal-src');
+      img.src = urls[idx];
       resetImageTransform();
+      updateModalCarouselState();
       renderPage();
     }
 
-    function closeImageModal() {
-      document.getElementById('image-modal').classList.add('hidden');
-      activeModalInternalId = null;
+    function resetImageTransform() {
+      imgScale = 1;
+      imgRotate = 0;
+      imgFlipH = 1;
+      imgFlipV = 1;
+      applyImageTransform();
     }
 
     function zoomImage(delta) {
-      currentImgScale = Math.max(0.2, currentImgScale + delta);
+      imgScale = Math.max(0.5, Math.min(5, imgScale + delta));
       applyImageTransform();
     }
 
     function rotateImage(deg) {
-      currentImgRotate = (currentImgRotate + deg) % 360;
+      imgRotate = (imgRotate + deg) % 360;
       applyImageTransform();
     }
 
     function flipImage(axis) {
-      if (axis === 'h') currentImgFlipH *= -1;
-      if (axis === 'v') currentImgFlipV *= -1;
-      applyImageTransform();
-    }
-
-    function resetImageTransform() {
-      currentImgScale = 1;
-      currentImgRotate = 0;
-      currentImgFlipH = 1;
-      currentImgFlipV = 1;
+      if (axis === 'h') imgFlipH *= -1;
+      if (axis === 'v') imgFlipV *= -1;
       applyImageTransform();
     }
 
     function applyImageTransform() {
       const img = document.getElementById('image-modal-src');
-      img.style.transform = `scale(${currentImgScale}) rotate(${currentImgRotate}deg) scaleX(${currentImgFlipH}) scaleY(${currentImgFlipV})`;
+      img.style.transform = `scale(${imgScale}) rotate(${imgRotate}deg) scaleX(${imgFlipH}) scaleY(${imgFlipV})`;
     }
 
     function setupImageModalEvents() {
       const viewport = document.getElementById('image-modal-viewport');
       let isDragging = false;
-      let startX, startY, scrollLeft, scrollTop;
+      let startX, startY, translateX = 0, translateY = 0;
 
       viewport.addEventListener('mousedown', (e) => {
         isDragging = true;
-        viewport.classList.add('cursor-grabbing');
-        startX = e.pageX - viewport.offsetLeft;
-        startY = e.pageY - viewport.offsetTop;
-        scrollLeft = viewport.scrollLeft;
-        scrollTop = viewport.scrollTop;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
       });
 
-      window.addEventListener('mouseup', () => {
-        isDragging = false;
-        viewport.classList.remove('cursor-grabbing');
-      });
-
-      viewport.addEventListener('mousemove', (e) => {
+      window.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        e.preventDefault();
-        const x = e.pageX - viewport.offsetLeft;
-        const y = e.pageY - viewport.offsetTop;
-        const walkX = (x - startX) * 1.5;
-        const walkY = (y - startY) * 1.5;
-        viewport.scrollLeft = scrollLeft - walkX;
-        viewport.scrollTop = scrollTop - walkY;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        const img = document.getElementById('image-modal-src');
+        img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${imgScale}) rotate(${imgRotate}deg) scaleX(${imgFlipH}) scaleY(${imgFlipV})`;
       });
+
+      window.addEventListener('mouseup', () => { isDragging = false; });
     }
 
+    // Video Modal Functions
     function openVideoModal(url) {
       const modal = document.getElementById('video-modal');
       const video = document.getElementById('modal-video-player');
@@ -1016,10 +877,10 @@
           hlsInstance = new Hls();
           hlsInstance.loadSource(url);
           hlsInstance.attachMedia(video);
-          hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+          hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => { video.play(); });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           video.src = url;
-          video.play();
+          video.addEventListener('loadedmetadata', () => { video.play(); });
         }
       } else {
         video.src = url;
@@ -1037,15 +898,6 @@
         hlsInstance = null;
       }
       modal.classList.add('hidden');
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
     }
   </script>
 </body>
