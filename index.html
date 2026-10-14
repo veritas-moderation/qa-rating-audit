@@ -488,14 +488,14 @@
           rawDataset = jsonObject.map((row, idx) => ({
             ...row,
             __internal_id: idx + 1,
-            rating: row.rating !== undefined && row.rating !== '' ? Number(row.rating) : (row.blind_rating !== undefined && row.blind_rating !== '' ? Number(row.blind_rating) : ''),
+            rating: row.rating !== undefined && row.rating !== '' ? Number(row.rating) : (row.blind_rating !== undefined && row.blind_rating !== '' ? Number(row.blind_rating) : (row['QA rating'] !== undefined && row['QA rating'] !== '' ? Number(row['QA rating']) : '')),
             decision: row.decision || row.blind_decision || '',
-            notes: row.notes || row.blind_notes || '',
-            is_vague: row.is_vague === true || row.is_vague === 'true' || row.is_vague === 1 || row.is_vague === '1',
+            notes: row.notes || row.blind_notes || row.Remarks || row.remarks || '',
+            is_vague: row.is_vague === true || row.is_vague === 'true' || row.is_vague === 1 || row.is_vague === '1' || String(row['Vague cases']).toLowerCase() === 'yes',
             is_submitted: row.is_submitted === true || row.is_submitted === 'true' || row.is_submitted === 1 || row.is_submitted === '1',
             rating_diff: row.rating_diff !== undefined ? row.rating_diff : '',
-            timestamp: row.timestamp || row.blind_timestamp || '',
-            auditor: row.auditor || row.blind_auditor || activeAuditor
+            timestamp: row.timestamp || row.blind_timestamp || row.Timestamp || '',
+            auditor: row.auditor || row.blind_auditor || row['Auditor Name'] || activeAuditor
           }));
 
           currentPage = 1;
@@ -1018,13 +1018,57 @@
       }
 
       const currentAuditor = document.getElementById('auditor-id').value || 'Carlo';
-      rawDataset.forEach(item => {
-        if (!item.auditor) {
-          item.auditor = currentAuditor;
+
+      const keysToRemove = [
+        'blind decision', 'blind_decision',
+        'blind note', 'blind_note', 'blind_notes',
+        'decision diff', 'decision_diff',
+        'blind time', 'blind_time', 'blind_timestamp',
+        'blind auditing', 'blind_auditing', 'blind_auditor',
+        '__internal_id', 'is_submitted', 'rating_diff',
+        'rating', 'notes', 'is_vague', 'timestamp', 'auditor', 'decision'
+      ];
+
+      const exportData = rawDataset.map(item => {
+        const row = {};
+
+        // Copy original columns except removed columns
+        Object.keys(item).forEach(key => {
+          const lowerKey = key.toLowerCase().trim();
+          if (!keysToRemove.includes(key) && !keysToRemove.includes(lowerKey)) {
+            row[key] = item[key];
+          }
+        });
+
+        const qaRating = item.rating !== '' && item.rating !== undefined ? item.rating : '';
+        const timestamp = item.timestamp || '';
+        const auditorName = item.auditor || currentAuditor;
+        const vagueCases = item.is_vague ? 'yes' : 'no';
+        const remarks = item.notes || '';
+
+        const contentLevel = item.content_level !== undefined && item.content_level !== ''
+          ? item.content_level
+          : (item.original_rating !== undefined ? item.original_rating : '');
+
+        let ratingDiffCases = 'FALSE';
+        if (qaRating !== '' && contentLevel !== '') {
+          const isMatch = String(qaRating).trim() === String(contentLevel).trim();
+          ratingDiffCases = isMatch ? 'FALSE' : 'TRUE';
+        } else if (qaRating !== '' || contentLevel !== '') {
+          ratingDiffCases = 'TRUE';
         }
+
+        row['QA rating'] = qaRating;
+        row['Timestamp'] = timestamp;
+        row['Auditor Name'] = auditorName;
+        row['Vague cases'] = vagueCases;
+        row['Remarks'] = remarks;
+        row['rating diff cases'] = ratingDiffCases;
+
+        return row;
       });
 
-      const worksheet = XLSX.utils.json_to_sheet(rawDataset);
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Results");
 
