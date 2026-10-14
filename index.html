@@ -264,7 +264,7 @@
     </section>
 
     <!-- Cards Container -->
-    <section id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    <section id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
       <div class="col-span-full py-20 px-4 text-center glass-panel rounded-3xl border border-dashed border-sage-400/50">
         <div class="w-16 h-16 bg-sage-500/10 text-sage-700 dark:text-sage-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <i data-lucide="file-up" class="w-8 h-8"></i>
@@ -718,7 +718,7 @@
         const urls = parseMediaUrls(item.media_url);
 
         let mediaHtml = `
-          <div class="w-full h-52 bg-slate-50 dark:bg-slate-900/50 flex flex-col items-center justify-center text-xs text-slate-400 border-y border-slate-200/50">
+          <div class="w-full h-64 bg-slate-50 dark:bg-slate-900/50 flex flex-col items-center justify-center text-xs text-slate-400 border-y border-slate-200/50">
             <i data-lucide="image-off" class="w-6 h-6 mb-1 text-slate-300"></i>
             <span>No Attachment</span>
           </div>
@@ -729,7 +729,7 @@
           const lower = mediaUrl.toLowerCase();
           if (lower.match(/\.(jpeg|jpg|gif|png|webp)/)) {
             mediaHtml = `
-              <div class="w-full h-52 bg-slate-900 flex items-center justify-center relative group overflow-hidden border-y border-slate-200/50 cursor-pointer"
+              <div class="w-full h-64 bg-slate-900 flex items-center justify-center relative group overflow-hidden border-y border-slate-200/50 cursor-pointer"
                    onclick="openImageModal('${mediaUrl}', ${item.__internal_id})">
                 <img src="${mediaUrl}" alt="Attachment" class="max-h-full max-w-full object-contain transition-transform group-hover:scale-105"
                      onerror="this.parentElement.innerHTML='<div class=\'text-xs text-rose-400 p-2 text-center\'>Failed to load image</div>'">
@@ -742,7 +742,7 @@
             const videoId = `card-video-${item.__internal_id}-0`;
             setTimeout(() => initCardVideo(videoId, mediaUrl), 50);
             mediaHtml = `
-              <div class="w-full h-52 bg-black flex items-center justify-center relative overflow-hidden border-y border-slate-200/50">
+              <div class="w-full h-64 bg-black flex items-center justify-center relative overflow-hidden border-y border-slate-200/50">
                 <video id="${videoId}" controls playsinline preload="metadata" class="w-full h-full object-contain bg-black"></video>
                 <button onclick="openVideoModal('${mediaUrl}')" title="Fullscreen" class="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white z-10 transition-colors">
                   <i data-lucide="maximize" class="w-4 h-4"></i>
@@ -783,7 +783,7 @@
           }
 
           mediaHtml = `
-            <div class="media-container w-full h-52 bg-black flex items-center justify-center relative border-y border-slate-200/50 overflow-hidden group">
+            <div class="media-container w-full h-64 bg-black flex items-center justify-center relative border-y border-slate-200/50 overflow-hidden group">
               ${activeSlideContent}
               <div class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-mono font-bold text-white z-10">
                 ${activeIndex + 1} / ${urls.length}
