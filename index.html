@@ -1011,6 +1011,16 @@
       }
     }
 
+    function getContentLevelVal(item) {
+      for (const key of Object.keys(item)) {
+        const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (cleanKey === 'contentlevel') {
+          return item[key];
+        }
+      }
+      return item.content_level !== undefined ? item.content_level : (item.original_rating !== undefined ? item.original_rating : '');
+    }
+
     function handleExportAndReset() {
       if (rawDataset.length === 0) {
         alert("No data to export.");
@@ -1025,45 +1035,67 @@
         'decision diff', 'decision_diff',
         'blind time', 'blind_time', 'blind_timestamp',
         'blind auditing', 'blind_auditing', 'blind_auditor',
-        '__internal_id', 'is_submitted', 'rating_diff',
-        'rating', 'notes', 'is_vague', 'timestamp', 'auditor', 'decision'
+        '__internal_id', 'is_submitted'
       ];
 
       const exportData = rawDataset.map(item => {
         const row = {};
 
-        // Copy original columns except removed columns
-        Object.keys(item).forEach(key => {
-          const lowerKey = key.toLowerCase().trim();
-          if (!keysToRemove.includes(key) && !keysToRemove.includes(lowerKey)) {
-            row[key] = item[key];
-          }
-        });
-
         const qaRating = item.rating !== '' && item.rating !== undefined ? item.rating : '';
         const timestamp = item.timestamp || '';
         const auditorName = item.auditor || currentAuditor;
-        const vagueCases = item.is_vague ? 'yes' : 'no';
+        const vagueCases = item.is_vague ? 'Yes' : 'No';
         const remarks = item.notes || '';
 
-        const contentLevel = item.content_level !== undefined && item.content_level !== ''
-          ? item.content_level
-          : (item.original_rating !== undefined ? item.original_rating : '');
+        const contentLevel = getContentLevelVal(item);
 
         let ratingDiffCases = 'FALSE';
         if (qaRating !== '' && contentLevel !== '') {
           const isMatch = String(qaRating).trim() === String(contentLevel).trim();
-          ratingDiffCases = isMatch ? 'FALSE' : 'TRUE';
-        } else if (qaRating !== '' || contentLevel !== '') {
-          ratingDiffCases = 'TRUE';
+          ratingDiffCases = isMatch ? 'TRUE' : 'FALSE';
         }
 
-        row['QA rating'] = qaRating;
-        row['Timestamp'] = timestamp;
-        row['Auditor Name'] = auditorName;
-        row['Vague cases'] = vagueCases;
-        row['Remarks'] = remarks;
-        row['rating diff cases'] = ratingDiffCases;
+        // Copy original columns except removed keys
+        Object.keys(item).forEach(key => {
+          const lowerKey = key.toLowerCase().trim();
+          if (!keysToRemove.includes(key) && !keysToRemove.includes(lowerKey)) {
+            if (lowerKey === 'rating' || lowerKey === 'qa rating' || lowerKey === 'qa_rating') {
+              row[key] = qaRating;
+            } else if (lowerKey === 'rating_diff' || lowerKey === 'rating diff' || lowerKey === 'rating diff cases') {
+              row[key] = ratingDiffCases;
+            } else if (lowerKey === 'is_vague' || lowerKey === 'vague cases' || lowerKey === 'vague_cases') {
+              row[key] = vagueCases;
+            } else if (lowerKey === 'notes' || lowerKey === 'remarks') {
+              row[key] = remarks;
+            } else if (lowerKey === 'timestamp') {
+              row[key] = timestamp;
+            } else if (lowerKey === 'auditor' || lowerKey === 'auditor name' || lowerKey === 'auditor_name') {
+              row[key] = auditorName;
+            } else if (key !== 'rating' && key !== 'notes' && key !== 'is_vague' && key !== 'timestamp' && key !== 'auditor' && key !== 'decision' && key !== 'rating_diff') {
+              row[key] = item[key];
+            }
+          }
+        });
+
+        // Ensure required standard exported fields exist if not already present in row
+        if (row['rating'] === undefined && row['QA rating'] === undefined) {
+          row['QA rating'] = qaRating;
+        }
+        if (row['rating_diff'] === undefined && row['rating diff cases'] === undefined) {
+          row['rating diff cases'] = ratingDiffCases;
+        }
+        if (row['is_vague'] === undefined && row['Vague cases'] === undefined) {
+          row['is_vague'] = vagueCases;
+        }
+        if (row['notes'] === undefined && row['Remarks'] === undefined) {
+          row['notes'] = remarks;
+        }
+        if (row['timestamp'] === undefined && row['Timestamp'] === undefined) {
+          row['Timestamp'] = timestamp;
+        }
+        if (row['auditor'] === undefined && row['Auditor Name'] === undefined) {
+          row['Auditor Name'] = auditorName;
+        }
 
         return row;
       });
