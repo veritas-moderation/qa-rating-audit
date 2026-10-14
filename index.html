@@ -490,7 +490,7 @@
             __internal_id: idx + 1,
             rating: row.rating !== undefined && row.rating !== '' ? Number(row.rating) : (row.blind_rating !== undefined && row.blind_rating !== '' ? Number(row.blind_rating) : (row['QA rating'] !== undefined && row['QA rating'] !== '' ? Number(row['QA rating']) : '')),
             decision: row.decision || row.blind_decision || '',
-            notes: row.notes || row.blind_notes || row.Remarks || row.remarks || '',
+            notes: '',
             is_vague: row.is_vague === true || row.is_vague === 'true' || row.is_vague === 1 || row.is_vague === '1' || String(row['Vague cases']).toLowerCase() === 'yes',
             is_submitted: row.is_submitted === true || row.is_submitted === 'true' || row.is_submitted === 1 || row.is_submitted === '1',
             rating_diff: row.rating_diff !== undefined ? row.rating_diff : '',
@@ -1106,6 +1106,13 @@
 
       const dateStr = new Date().toISOString().slice(0, 10);
       XLSX.writeFile(workbook, `Veritas_QA_Audit_${currentAuditor}_${dateStr}.xlsx`);
+
+      // Reset state after extracting data
+      rawDataset = [];
+      localStorage.removeItem('veritas_qa_session');
+      exportBtn.disabled = true;
+      currentPage = 1;
+      renderPage();
     }
 
     // Modal Image Functions
