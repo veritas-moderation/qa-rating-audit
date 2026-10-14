@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Veritas QA Moderation - Blind Audit</title>
+  <title>Veritas QA Moderation - Quality Audit</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -35,6 +35,35 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+    import { getFirestore, doc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA5uuRGJ44JEb26i3ZRoP-bACn8XzdkI_c",
+      authDomain: "veritas-qa-tool.firebaseapp.com",
+      projectId: "veritas-qa-tool",
+      storageBucket: "veritas-qa-tool.firebasestorage.app",
+      messagingSenderId: "868930228944",
+      appId: "1:868930228944:web:0076f06a8cec3b2c2804d5",
+      measurementId: "G-1FFG571YM2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    window.firebaseApp = app;
+    window.firebaseAnalytics = analytics;
+    window.firebaseDb = db;
+    window.firestoreDoc = doc;
+    window.firestoreOnSnapshot = onSnapshot;
+    window.firestoreSetDoc = setDoc;
+    window.firestoreDeleteDoc = deleteDoc;
+  </script>
   <style>
     ::-webkit-scrollbar {
       width: 6px;
@@ -78,13 +107,13 @@
       box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
     }
     .glass-card {
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, 0.9);
       box-shadow: 0 4px 20px -2px rgba(60, 80, 60, 0.08);
     }
     .dark .glass-card {
-      background: rgba(38, 50, 40, 0.85);
+      background: rgba(38, 50, 40, 0.9);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.25);
@@ -163,8 +192,10 @@
         <div class="flex items-center gap-2 bg-white/70 dark:bg-slate-800/70 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-slate-700">
           <i data-lucide="user-check" class="w-4 h-4 text-sage-600"></i>
           <label for="auditor-id" class="text-xs font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">Auditor:</label>
-          <input type="text" id="auditor-id" value="Auditor_01" placeholder="Enter ID" 
-                 class="bg-transparent text-xs font-semibold focus:outline-none w-24 text-slate-800 dark:text-slate-100">
+          <select id="auditor-id" class="bg-transparent text-xs font-semibold focus:outline-none text-slate-800 dark:text-slate-100 cursor-pointer">
+            <option value="Carlo" class="dark:bg-slate-800">Carlo</option>
+            <option value="Reg" class="dark:bg-slate-800">Reg</option>
+          </select>
         </div>
 
         <button id="theme-toggle" class="p-2 text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 hover:bg-white rounded-lg border border-slate-200/80 dark:border-slate-700 transition-colors">
@@ -186,7 +217,7 @@
     </div>
   </header>
 
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex flex-col gap-6 z-20 pb-28">
+  <main class="flex-1 max-w-[1920px] w-full mx-auto px-4 lg:px-6 py-6 flex flex-col gap-6 z-20 pb-28">
 
     <!-- Progress Dashboard Panel -->
     <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -241,11 +272,12 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Status:</label>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Status Filter (Current Page):</label>
           <select id="status-filter" class="px-3 py-2 text-xs bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500">
-            <option value="ALL" selected>All Cases</option>
-            <option value="PENDING">Pending Review</option>
-            <option value="CONFIRMED">Submitted Cases</option>
+            <option value="ALL" selected>All Cases on Page</option>
+            <option value="PENDING">Pending Cases</option>
+            <option value="RATED">Rated Cases</option>
+            <option value="VAGUE">Vague Cases</option>
           </select>
         </div>
       </div>
@@ -253,9 +285,6 @@
       <div class="flex items-center gap-3 justify-between md:justify-end">
         <span id="page-info" class="text-xs font-bold text-sage-800 dark:text-sage-200">Batch 1 of 1</span>
         <div class="flex items-center gap-1">
-          <button id="prev-page-btn" disabled class="p-1.5 rounded-lg bg-white/70 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 disabled:opacity-30">
-            <i data-lucide="chevron-left" class="w-4 h-4"></i>
-          </button>
           <button id="next-page-btn" disabled class="p-1.5 rounded-lg bg-white/70 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 disabled:opacity-30">
             <i data-lucide="chevron-right" class="w-4 h-4"></i>
           </button>
@@ -264,14 +293,14 @@
     </section>
 
     <!-- Cards Container -->
-    <section id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    <section id="cards-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
       <div class="col-span-full py-20 px-4 text-center glass-panel rounded-3xl border border-dashed border-sage-400/50">
         <div class="w-16 h-16 bg-sage-500/10 text-sage-700 dark:text-sage-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <i data-lucide="file-up" class="w-8 h-8"></i>
         </div>
         <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">No Audit Dataset Loaded</h3>
         <p class="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-6">
-          Upload an Excel audit spreadsheet (.xlsx, .xls) to render 12-case moderation pages in blind evaluation mode.
+          Upload an Excel audit spreadsheet (.xlsx, .xls) to render 12-case moderation pages in evaluation mode.
         </p>
         <label for="excel-file" class="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 bg-sage-700 hover:bg-sage-800 text-white font-medium text-xs rounded-xl shadow-lg shadow-sage-900/20 transition-all">
           <i data-lucide="upload" class="w-4 h-4"></i>
@@ -286,12 +315,12 @@
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
       <div class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
         <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600"></i>
-        <span id="bottom-bar-status">Choose a rating (0-5) for all 12 cases on this page to unlock submission.</span>
+        <span id="bottom-bar-status">Rate all 12 cases or mark vague cases with a reason to unlock submission.</span>
       </div>
 
       <button id="batch-submit-btn" disabled 
               class="w-full sm:w-auto px-6 py-2.5 bg-sage-700 hover:bg-sage-800 disabled:bg-slate-400 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-sage-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-        <span>Submit Page Cases & Next Batch</span>
+        <span>Submit Pages & Next</span>
         <i data-lucide="arrow-right" class="w-4 h-4"></i>
       </button>
     </div>
@@ -329,7 +358,7 @@
 
     <!-- Main Zoomable Viewport -->
     <div class="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing" id="image-modal-viewport">
-      <img id="image-modal-src" src="" alt="Zoomable Media" class="max-h-[85vh] max-w-[85vw] object-contain transition-transform duration-100 ease-out">
+      <img id="image-modal-src" src="" alt="Zoomable Media" class="max-h-[85vh] max-w-[85vw] object-contain transition-transform duration-100 ease-out origin-center">
     </div>
   </div>
 
@@ -348,6 +377,7 @@
     let currentPage = 1;
     const ITEMS_PER_PAGE = 12;
     let hlsInstance = null;
+    let cardHlsInstances = {};
     let carouselState = {};
     let activeModalInternalId = null;
 
@@ -355,6 +385,8 @@
     let imgRotate = 0;
     let imgFlipH = 1;
     let imgFlipV = 1;
+    let translateX = 0;
+    let translateY = 0;
 
     const fileInput = document.getElementById('excel-file');
     const exportBtn = document.getElementById('export-btn');
@@ -362,7 +394,6 @@
     const statusFilter = document.getElementById('status-filter');
     const cardsContainer = document.getElementById('cards-container');
     const batchSubmitBtn = document.getElementById('batch-submit-btn');
-    const prevPageBtn = document.getElementById('prev-page-btn');
     const nextPageBtn = document.getElementById('next-page-btn');
     const pageInfo = document.getElementById('page-info');
 
@@ -372,15 +403,57 @@
 
     fileInput.addEventListener('change', handleExcelUpload);
     searchInput.addEventListener('input', () => { currentPage = 1; renderPage(); });
-    statusFilter.addEventListener('change', () => { currentPage = 1; renderPage(); });
-    prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); } });
-    nextPageBtn.addEventListener('click', () => { currentPage++; renderPage(); });
+    statusFilter.addEventListener('change', () => { renderPage(); });
+
+    nextPageBtn.addEventListener('click', () => {
+      const pageItems = getCurrentPageBatch();
+      const allCompleted = pageItems.length > 0 && pageItems.every(i => {
+        const hasRating = i.rating !== '' && i.rating !== undefined;
+        const isVagueValid = i.is_vague && i.notes && i.notes.trim().length > 0;
+        return hasRating || isVagueValid;
+      });
+
+      const totalPages = Math.ceil(getFilteredData().length / ITEMS_PER_PAGE) || 1;
+
+      if (allCompleted && currentPage < totalPages) {
+        submitCurrentPageCases(pageItems);
+        currentPage++;
+        renderPage();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        alert("Please complete/answer all cases on this page before proceeding to the next batch.");
+      }
+    });
+
     batchSubmitBtn.addEventListener('click', handleNextBatch);
     exportBtn.addEventListener('click', handleExportAndReset);
+
+    history.pushState(null, null, location.href);
+    window.addEventListener('popstate', function () {
+      history.pushState(null, null, location.href);
+    });
+
+    const tabId = Math.random().toString(36).substring(2, 9);
+    const bc = new BroadcastChannel('veritas_qa_channel');
+    bc.onmessage = (event) => {
+      if (event.data && event.data.type === 'DATASET_UPDATE' && event.data.senderId !== tabId) {
+        rawDataset = event.data.items || [];
+        if (rawDataset.length > 0) {
+          localStorage.setItem('veritas_qa_session', JSON.stringify(rawDataset));
+          exportBtn.disabled = false;
+        } else {
+          localStorage.removeItem('veritas_qa_session');
+          exportBtn.disabled = true;
+          currentPage = 1;
+        }
+        renderPage();
+      }
+    };
 
     window.addEventListener('DOMContentLoaded', () => {
       loadSession();
       setupImageModalEvents();
+      initFirestoreListener();
       lucide.createIcons();
 
       window.addEventListener('keydown', (e) => {
@@ -397,6 +470,93 @@
         }
       });
     });
+
+    let isLocalUpdate = false;
+
+    function initFirestoreListener() {
+      if (!window.firebaseDb) {
+        setTimeout(initFirestoreListener, 100);
+        return;
+      }
+      try {
+        const datasetRef = window.firestoreDoc(window.firebaseDb, 'veritas_qa', 'active_dataset');
+        window.firestoreOnSnapshot(datasetRef, (snapshot) => {
+          if (snapshot.metadata && snapshot.metadata.hasPendingWrites) {
+            return;
+          }
+          if (isLocalUpdate) {
+            isLocalUpdate = false;
+            return;
+          }
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            if (data && Array.isArray(data.items)) {
+              rawDataset = data.items;
+              localStorage.setItem('veritas_qa_session', JSON.stringify(rawDataset));
+              exportBtn.disabled = rawDataset.length === 0;
+              renderPage();
+            }
+          } else {
+            rawDataset = [];
+            localStorage.removeItem('veritas_qa_session');
+            exportBtn.disabled = true;
+            currentPage = 1;
+            renderPage();
+          }
+        }, (error) => {
+          console.warn("Firestore real-time listener error:", error);
+        });
+      } catch (err) {
+        console.warn("Could not setup Firestore listener:", err);
+      }
+    }
+
+    async function syncDatasetToFirestore() {
+      if (typeof bc !== 'undefined') {
+        bc.postMessage({ type: 'DATASET_UPDATE', items: rawDataset, senderId: tabId });
+      }
+      if (!window.firebaseDb) return;
+      try {
+        isLocalUpdate = true;
+        const datasetRef = window.firestoreDoc(window.firebaseDb, 'veritas_qa', 'active_dataset');
+        if (rawDataset.length > 0) {
+          await window.firestoreSetDoc(datasetRef, { items: rawDataset, updatedAt: new Date().toISOString() });
+        } else {
+          await window.firestoreDeleteDoc(datasetRef);
+        }
+      } catch (err) {
+        isLocalUpdate = false;
+        console.warn("Firestore dataset sync error:", err);
+      }
+    }
+
+    function destroyCardVideoInstances() {
+      Object.keys(cardHlsInstances).forEach(id => {
+        if (cardHlsInstances[id]) {
+          cardHlsInstances[id].destroy();
+        }
+      });
+      cardHlsInstances = {};
+    }
+
+    function initCardVideo(videoId, mediaUrl) {
+      const video = document.getElementById(videoId);
+      if (!video) return;
+
+      if (mediaUrl.includes('.m3u8')) {
+        if (Hls.isSupported()) {
+          if (cardHlsInstances[videoId]) cardHlsInstances[videoId].destroy();
+          const hls = new Hls();
+          hls.loadSource(mediaUrl);
+          hls.attachMedia(video);
+          cardHlsInstances[videoId] = hls;
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = mediaUrl;
+        }
+      } else {
+        video.src = mediaUrl;
+      }
+    }
 
     function loadSession() {
       const saved = localStorage.getItem('veritas_qa_session');
@@ -429,20 +589,24 @@
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonObject = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
+          const activeAuditor = document.getElementById('auditor-id').value || 'Carlo';
+
           rawDataset = jsonObject.map((row, idx) => ({
             ...row,
             __internal_id: idx + 1,
-            blind_rating: row.blind_rating !== undefined && row.blind_rating !== '' ? Number(row.blind_rating) : '',
-            blind_decision: row.blind_decision || '',
-            blind_notes: row.blind_notes || '',
-            decision_diff: row.decision_diff !== undefined ? row.decision_diff : '',
+            rating: row.rating !== undefined && row.rating !== '' ? Number(row.rating) : (row.blind_rating !== undefined && row.blind_rating !== '' ? Number(row.blind_rating) : (row['QA rating'] !== undefined && row['QA rating'] !== '' ? Number(row['QA rating']) : '')),
+            decision: row.decision || row.blind_decision || '',
+            notes: '',
+            is_vague: row.is_vague === true || row.is_vague === 'true' || row.is_vague === 1 || row.is_vague === '1' || String(row['Vague cases']).toLowerCase() === 'yes',
+            is_submitted: row.is_submitted === true || row.is_submitted === 'true' || row.is_submitted === 1 || row.is_submitted === '1',
             rating_diff: row.rating_diff !== undefined ? row.rating_diff : '',
-            blind_timestamp: row.blind_timestamp || '',
-            blind_auditor: row.blind_auditor || ''
+            timestamp: row.timestamp || row.blind_timestamp || row.Timestamp || '',
+            auditor: row.auditor || row.blind_auditor || row['Auditor Name'] || activeAuditor
           }));
 
           currentPage = 1;
           saveSession();
+          syncDatasetToFirestore();
           exportBtn.disabled = false;
           renderPage();
         } catch (err) {
@@ -462,7 +626,6 @@
 
     function getFilteredData() {
       const query = searchInput.value.toLowerCase().trim();
-      const status = statusFilter.value;
 
       return rawDataset.filter(item => {
         const matchesSearch = 
@@ -470,35 +633,44 @@
           String(item.title || '').toLowerCase().includes(query) ||
           String(item.content || '').toLowerCase().includes(query);
 
-        let matchesStatus = true;
-        const isSubmitted = item.blind_rating !== '' && item.blind_rating !== undefined;
-        if (status === 'PENDING') matchesStatus = !isSubmitted;
-        if (status === 'CONFIRMED') matchesStatus = isSubmitted;
-
-        return matchesSearch && matchesStatus;
+        return matchesSearch && !item.is_submitted;
       });
     }
 
+    function getCurrentPageBatch() {
+      const filtered = getFilteredData();
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      return filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }
+
     function renderPage() {
+      destroyCardVideoInstances();
       const filtered = getFilteredData();
       const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
       if (currentPage > totalPages) currentPage = totalPages;
 
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-      const pageItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+      const pageItems = getCurrentPageBatch();
+      const status = statusFilter.value;
+
+      const displayItems = pageItems.filter(item => {
+        const hasRating = item.rating !== '' && item.rating !== undefined;
+
+        if (status === 'PENDING') return !item.is_vague && !hasRating;
+        if (status === 'RATED') return !item.is_vague && hasRating;
+        if (status === 'VAGUE') return item.is_vague;
+        return true;
+      });
 
       pageInfo.innerText = `Batch ${currentPage} of ${totalPages}`;
-      prevPageBtn.disabled = currentPage === 1;
-      nextPageBtn.disabled = currentPage === totalPages;
 
       updateOverallStats();
-      renderCards(pageItems);
+      renderCards(displayItems);
       checkPageConfirmationStatus(pageItems);
     }
 
     function updateOverallStats() {
       const total = rawDataset.length;
-      const completed = rawDataset.filter(i => i.blind_rating !== '' && i.blind_rating !== undefined).length;
+      const completed = rawDataset.filter(i => i.is_submitted).length;
       const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
       document.getElementById('stat-total').innerText = total;
@@ -508,21 +680,32 @@
     }
 
     function checkPageConfirmationStatus(pageItems) {
-      const allRated = pageItems.length > 0 && pageItems.every(i => i.blind_rating !== '' && i.blind_rating !== undefined);
-      const ratedCount = pageItems.filter(i => i.blind_rating !== '' && i.blind_rating !== undefined).length;
+      const totalPages = Math.ceil(getFilteredData().length / ITEMS_PER_PAGE) || 1;
 
-      document.getElementById('stat-page-confirmed').innerText = `${ratedCount} / ${pageItems.length}`;
-      batchSubmitBtn.disabled = !allRated;
+      const allCompleted = pageItems.length > 0 && pageItems.every(i => {
+        const hasRating = i.rating !== '' && i.rating !== undefined;
+        const isVagueValid = i.is_vague && i.notes && i.notes.trim().length > 0;
+        return hasRating || isVagueValid;
+      });
+      const completedCount = pageItems.filter(i => {
+        const hasRating = i.rating !== '' && i.rating !== undefined;
+        const isVagueValid = i.is_vague && i.notes && i.notes.trim().length > 0;
+        return hasRating || isVagueValid;
+      }).length;
+
+      document.getElementById('stat-page-confirmed').innerText = `${completedCount} / ${pageItems.length}`;
+      batchSubmitBtn.disabled = !allCompleted;
+      nextPageBtn.disabled = !allCompleted || currentPage >= totalPages;
       
       const statusText = document.getElementById('bottom-bar-status');
       if (pageItems.length === 0) {
         statusText.innerText = "No cases to display in this batch.";
         statusText.className = "text-xs font-semibold text-slate-600 dark:text-slate-300";
-      } else if (allRated) {
-        statusText.innerText = "All 12 cases on this page are rated! Ready to submit.";
+      } else if (allCompleted) {
+        statusText.innerText = "All 12 cases on this page are rated or marked vague with reasons! Ready to submit.";
         statusText.className = "text-xs font-semibold text-emerald-700 dark:text-emerald-400";
       } else {
-        statusText.innerText = `Rated ${ratedCount} of ${pageItems.length} cases on this page. Rate all to continue.`;
+        statusText.innerText = `Completed ${completedCount} of ${pageItems.length} cases on this page. Rate or add vague reasons to continue.`;
         statusText.className = "text-xs font-semibold text-amber-700 dark:text-amber-400";
       }
     }
@@ -545,7 +728,63 @@
       }
 
       carouselState[internalId] = currentIndex;
-      renderPage();
+      updateCardCarousel(internalId);
+    }
+
+    function updateCardCarousel(internalId) {
+      const item = rawDataset.find(i => i.__internal_id === internalId);
+      if (!item) return;
+      const card = document.querySelector(`[data-internal-id="${internalId}"]`);
+      if (!card) return;
+
+      const mediaContainer = card.querySelector('.media-container');
+      if (!mediaContainer) return;
+
+      const urls = parseMediaUrls(item.media_url);
+      if (urls.length <= 1) return;
+
+      const activeIndex = carouselState[internalId] || 0;
+      const currentUrl = urls[activeIndex];
+      const lower = currentUrl.toLowerCase();
+
+      let activeSlideContent = '';
+      if (lower.match(/\.(jpeg|jpg|gif|png|webp)/)) {
+        activeSlideContent = `
+          <div class="w-full h-full flex items-center justify-center cursor-pointer group/zoom"
+               onclick="openImageModal('${currentUrl}', ${item.__internal_id})">
+            <img src="${currentUrl}" alt="Attachment ${activeIndex + 1}" class="max-h-full max-w-full object-contain transition-transform group-hover/zoom:scale-105">
+            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover/zoom:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+              <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
+            </div>
+          </div>
+        `;
+      } else {
+        const videoId = `card-video-${item.__internal_id}-${activeIndex}`;
+        setTimeout(() => initCardVideo(videoId, currentUrl), 50);
+        activeSlideContent = `
+          <div class="w-full h-full flex items-center justify-center relative group/zoom cursor-pointer"
+               onclick="openVideoModal('${currentUrl}')">
+            <video id="${videoId}" playsinline preload="metadata" class="w-full h-full object-contain bg-black pointer-events-none"></video>
+            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover/zoom:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+              <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
+            </div>
+          </div>
+        `;
+      }
+
+      mediaContainer.innerHTML = `
+        ${activeSlideContent}
+        <div class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-mono font-bold text-white z-10">
+          ${activeIndex + 1} / ${urls.length}
+        </div>
+        <button onclick="event.stopPropagation(); changeCarouselSlide(${item.__internal_id}, 'prev')" class="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white transition-all opacity-0 group-hover:opacity-100 z-10">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button onclick="event.stopPropagation(); changeCarouselSlide(${item.__internal_id}, 'next')" class="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white transition-all opacity-0 group-hover:opacity-100 z-10">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      `;
+      lucide.createIcons({ props: {}, name: undefined }, mediaContainer);
     }
 
     function renderCards(items) {
@@ -555,7 +794,7 @@
         cardsContainer.innerHTML = `
           <div class="col-span-full py-16 text-center text-slate-500 glass-panel rounded-2xl">
             <i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-            <p class="text-sm font-semibold">No cases found matching criteria</p>
+            <p class="text-sm font-semibold">No cases found matching filter criteria on this page</p>
           </div>
         `;
         lucide.createIcons();
@@ -564,17 +803,32 @@
 
       items.forEach(item => {
         const card = document.createElement('div');
-        const hasRated = item.blind_rating !== '' && item.blind_rating !== undefined;
+        const hasRating = item.rating !== '' && item.rating !== undefined;
 
+        let statusBadgeClass = 'bg-amber-100 text-amber-700 border-amber-200';
+        let statusText = 'PENDING';
+
+        if (item.is_vague) {
+          statusBadgeClass = 'bg-amber-500/20 text-amber-800 border-amber-300';
+          statusText = 'VAGUE';
+        } else if (hasRating) {
+          statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+          statusText = 'RATED';
+        }
+
+        const isCompleted = item.is_vague || hasRating;
+
+        card.setAttribute('data-internal-id', item.__internal_id);
         card.className = `glass-card rounded-2xl flex flex-col overflow-hidden card-transition border ${
-          hasRated ? 'border-sage-500/60 bg-white/95 ring-1 ring-sage-500/20' : 'border-slate-200/80 dark:border-slate-700'
+          isCompleted ? 'border-sage-500/60 ring-1 ring-sage-500/20' : 'border-slate-200/80 dark:border-slate-700'
         } relative`;
 
         const urls = parseMediaUrls(item.media_url);
 
         let mediaHtml = `
-          <div class="w-full h-48 bg-slate-100/50 dark:bg-slate-900/50 flex items-center justify-center text-xs text-slate-400 border-b border-slate-200/50">
-            <span class="flex items-center gap-1.5"><i data-lucide="image-off" class="w-4 h-4"></i> No Attachment</span>
+          <div class="w-full h-64 bg-slate-50 dark:bg-slate-900/50 flex flex-col items-center justify-center text-xs text-slate-400 border-y border-slate-200/50">
+            <i data-lucide="image-off" class="w-6 h-6 mb-1 text-slate-300"></i>
+            <span>No Attachment</span>
           </div>
         `;
 
@@ -583,7 +837,7 @@
           const lower = mediaUrl.toLowerCase();
           if (lower.match(/\.(jpeg|jpg|gif|png|webp)/)) {
             mediaHtml = `
-              <div class="w-full h-48 bg-slate-900 flex items-center justify-center relative group overflow-hidden border-b border-slate-200/50 cursor-pointer"
+              <div class="w-full h-64 bg-slate-900 flex items-center justify-center relative group overflow-hidden border-y border-slate-200/50 cursor-pointer"
                    onclick="openImageModal('${mediaUrl}', ${item.__internal_id})">
                 <img src="${mediaUrl}" alt="Attachment" class="max-h-full max-w-full object-contain transition-transform group-hover:scale-105"
                      onerror="this.parentElement.innerHTML='<div class=\'text-xs text-rose-400 p-2 text-center\'>Failed to load image</div>'">
@@ -593,13 +847,15 @@
               </div>
             `;
           } else if (lower.match(/\.(mp4|m3u8|webm)/)) {
+            const videoId = `card-video-${item.__internal_id}-0`;
+            setTimeout(() => initCardVideo(videoId, mediaUrl), 50);
             mediaHtml = `
-              <div class="w-full h-48 bg-slate-950 flex flex-col items-center justify-center border-b border-slate-200/50 gap-2 p-4">
-                <div class="p-3 rounded-full bg-sage-700/80 text-white shadow-lg cursor-pointer hover:scale-110 transition-transform"
-                     onclick="openVideoModal('${mediaUrl}')">
-                  <i data-lucide="play" class="w-6 h-6 ml-0.5"></i>
+              <div class="w-full h-64 bg-black flex items-center justify-center relative group overflow-hidden border-y border-slate-200/50 cursor-pointer"
+                   onclick="openVideoModal('${mediaUrl}')">
+                <video id="${videoId}" playsinline preload="metadata" class="w-full h-full object-contain bg-black pointer-events-none"></video>
+                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+                  <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
                 </div>
-                <span class="text-[11px] text-slate-300 font-medium">Click to Launch Stream</span>
               </div>
             `;
           }
@@ -614,7 +870,8 @@
           let activeSlideContent = '';
           if (lower.match(/\.(jpeg|jpg|gif|png|webp)/)) {
             activeSlideContent = `
-              <div class="w-full h-full flex items-center justify-center cursor-pointer group/zoom" onclick="openImageModal('${currentUrl}', ${item.__internal_id})">
+              <div class="w-full h-full flex items-center justify-center cursor-pointer group/zoom"
+                   onclick="openImageModal('${currentUrl}', ${item.__internal_id})">
                 <img src="${currentUrl}" alt="Attachment ${activeIndex + 1}" class="max-h-full max-w-full object-contain transition-transform group-hover/zoom:scale-105">
                 <div class="absolute inset-0 bg-black/30 opacity-0 group-hover/zoom:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
                   <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
@@ -622,18 +879,21 @@
               </div>
             `;
           } else {
+            const videoId = `card-video-${item.__internal_id}-${activeIndex}`;
+            setTimeout(() => initCardVideo(videoId, currentUrl), 50);
             activeSlideContent = `
-              <div class="w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer" onclick="openVideoModal('${currentUrl}')">
-                <div class="p-3 rounded-full bg-sage-700/80 text-white shadow-lg hover:scale-110 transition-transform">
-                  <i data-lucide="play" class="w-6 h-6 ml-0.5"></i>
+              <div class="w-full h-full flex items-center justify-center relative group/zoom cursor-pointer"
+                   onclick="openVideoModal('${currentUrl}')">
+                <video id="${videoId}" playsinline preload="metadata" class="w-full h-full object-contain bg-black pointer-events-none"></video>
+                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover/zoom:opacity-100 flex items-center justify-center transition-opacity text-white text-xs gap-1 font-semibold">
+                  <i data-lucide="maximize-2" class="w-4 h-4"></i> Click to Zoom
                 </div>
-                <span class="text-[11px] text-slate-300 font-medium">Click to Launch Stream</span>
               </div>
             `;
           }
 
           mediaHtml = `
-            <div class="w-full h-48 bg-slate-950 flex items-center justify-center relative border-b border-slate-200/50 overflow-hidden group">
+            <div class="media-container w-full h-64 bg-black flex items-center justify-center relative border-y border-slate-200/50 overflow-hidden group">
               ${activeSlideContent}
               <div class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-mono font-bold text-white z-10">
                 ${activeIndex + 1} / ${urls.length}
@@ -649,47 +909,59 @@
         }
 
         card.innerHTML = `
+          <!-- Header Bar with ID and Status Badge -->
+          <div class="px-4 py-3 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 tracking-tight">
+              ID: ${item.id || item.__internal_id}
+            </span>
+            <span class="status-badge text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${statusBadgeClass}">
+              ${statusText}
+            </span>
+          </div>
+
           ${mediaHtml}
+
           <div class="p-4 flex flex-col flex-1 gap-3">
-            <div class="flex items-start justify-between gap-2">
-              <div>
-                <span class="text-[10px] font-mono font-bold px-2 py-0.5 bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded">
-                  ID: ${item.id || item.__internal_id}
-                </span>
-                <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100 mt-1 line-clamp-1">${item.title || 'Untitled Case'}</h4>
-              </div>
-              <span class="text-[11px] font-semibold px-2 py-0.5 rounded ${hasRated ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}">
-                ${hasRated ? 'Rated' : 'Pending'}
-              </span>
+            <div>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-slate-100">${item.title || 'Untitled'}</h4>
             </div>
 
-            <div class="text-xs text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 max-h-24 overflow-y-auto">
+            <div class="text-xs text-slate-600 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
               <p class="whitespace-pre-wrap break-words">${item.content || 'No content description available.'}</p>
             </div>
 
-            <!-- Blind Rating Controls -->
+            <!-- Rating Controls Header & Buttons -->
             <div class="mt-auto pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-col gap-2">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Blind Rating (0-5):</label>
-                <span class="text-xs font-mono font-bold text-sage-700 dark:text-sage-300 rating-display-${item.__internal_id}">${item.blind_rating !== '' ? item.blind_rating : '-'}</span>
+              <div class="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <span>Rating (0 = Reject, 1-5 = Approve):</span>
+                <span class="rating-value-display font-bold text-slate-600 dark:text-slate-400">
+                  ${item.is_vague ? 'Vague' : (item.rating !== '' && item.rating !== undefined ? item.rating : 'Not Rated')}
+                </span>
               </div>
-              <div class="flex items-center gap-1 justify-between">
+
+              <div class="rating-buttons-container flex items-center gap-1.5 justify-between ${item.is_vague ? 'opacity-40 pointer-events-none' : ''}">
                 ${[0, 1, 2, 3, 4, 5].map(score => `
-                  <button onclick="setBlindRating(${item.__internal_id},${score})"
-                          class="w-8 h-8 rounded-lg font-bold text-xs transition-all ${
-                            item.blind_rating === score 
+                  <button data-score="${score}" onclick="setRating(${item.__internal_id},${score})"
+                          class="flex-1 h-8 rounded-lg font-bold text-xs transition-all ${
+                            item.rating === score
                               ? 'bg-sage-700 text-white shadow-md shadow-sage-900/20 scale-105' 
-                              : 'bg-white/80 dark:bg-slate-800 hover:bg-sage-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
+                              : 'bg-white dark:bg-slate-800 hover:bg-sage-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                           }">
                     ${score}
                   </button>
                 `).join('')}
               </div>
 
-              <div class="mt-1">
-                <input type="text" placeholder="Add blind audit notes..." value="${item.blind_notes || ''}"
-                       oninput="setBlindNotes(${item.__internal_id}, this.value)"
-                       class="w-full px-3 py-1.5 text-xs bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500">
+              <div class="mt-1.5 flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                  <label class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 cursor-pointer">
+                    <input type="checkbox" class="vague-checkbox rounded border-slate-300 text-amber-600 focus:ring-amber-500" ${item.is_vague ? 'checked' : ''} onchange="setVague(${item.__internal_id}, this.checked)">
+                    Mark as Vague Case
+                  </label>
+                </div>
+                <input type="text" placeholder="${item.is_vague ? 'Required: Give reason why it should be vague...' : 'Add notes (optional)...'}" value="${item.notes || ''}"
+                       oninput="setNotes(${item.__internal_id}, this.value)"
+                       class="notes-input w-full px-3 py-1.5 text-xs bg-white/80 dark:bg-slate-900/70 border ${item.is_vague && (!item.notes || !item.notes.trim()) ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-200 dark:border-slate-700'} rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500">
               </div>
             </div>
           </div>
@@ -701,39 +973,171 @@
       lucide.createIcons();
     }
 
-    function setBlindRating(internalId, score) {
+    function updateCardUI(internalId) {
       const item = rawDataset.find(i => i.__internal_id === internalId);
       if (!item) return;
 
-      item.blind_rating = score;
-      item.blind_timestamp = new Date().toISOString();
-      item.blind_auditor = document.getElementById('auditor-id').value.trim() || 'Auditor_01';
+      const card = document.querySelector(`[data-internal-id="${internalId}"]`);
+      if (!card) return;
 
-      if (item.rating !== undefined && item.rating !== '') {
-        item.rating_diff = Number(score) - Number(item.rating);
+      const hasRating = item.rating !== '' && item.rating !== undefined;
+      const isCompleted = item.is_vague || hasRating;
+
+      card.className = `glass-card rounded-2xl flex flex-col overflow-hidden card-transition border ${
+        isCompleted ? 'border-sage-500/60 ring-1 ring-sage-500/20' : 'border-slate-200/80 dark:border-slate-700'
+      } relative`;
+
+      const badge = card.querySelector('.status-badge');
+      if (badge) {
+        if (item.is_vague) {
+          badge.className = 'status-badge text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border bg-amber-500/20 text-amber-800 border-amber-300';
+          badge.innerText = 'VAGUE';
+        } else if (hasRating) {
+          badge.className = 'status-badge text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border bg-emerald-100 text-emerald-800 border-emerald-200';
+          badge.innerText = 'RATED';
+        } else {
+          badge.className = 'status-badge text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border bg-amber-100 text-amber-700 border-amber-200';
+          badge.innerText = 'PENDING';
+        }
+      }
+
+      const ratingVal = card.querySelector('.rating-value-display');
+      if (ratingVal) {
+        ratingVal.innerText = item.is_vague ? 'Vague' : (hasRating ? item.rating : 'Not Rated');
+      }
+
+      const buttonsContainer = card.querySelector('.rating-buttons-container');
+      if (buttonsContainer) {
+        if (item.is_vague) {
+          buttonsContainer.classList.add('opacity-40', 'pointer-events-none');
+        } else {
+          buttonsContainer.classList.remove('opacity-40', 'pointer-events-none');
+        }
+      }
+
+      const buttons = card.querySelectorAll('button[data-score]');
+      buttons.forEach(btn => {
+        const btnScore = Number(btn.getAttribute('data-score'));
+        if (!item.is_vague && item.rating === btnScore) {
+          btn.className = 'flex-1 h-8 rounded-lg font-bold text-xs transition-all bg-sage-700 text-white shadow-md shadow-sage-900/20 scale-105';
+        } else {
+          btn.className = 'flex-1 h-8 rounded-lg font-bold text-xs transition-all bg-white dark:bg-slate-800 hover:bg-sage-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
+        }
+      });
+
+      const vagueCheckbox = card.querySelector('.vague-checkbox');
+      if (vagueCheckbox) {
+        vagueCheckbox.checked = !!item.is_vague;
+      }
+
+      const notesInput = card.querySelector('.notes-input');
+      if (notesInput) {
+        notesInput.placeholder = item.is_vague ? 'Required: Give reason why it should be vague...' : 'Add notes (optional)...';
+        if (item.is_vague && (!item.notes || !item.notes.trim())) {
+          notesInput.className = 'notes-input w-full px-3 py-1.5 text-xs bg-white/80 dark:bg-slate-900/70 border border-amber-500 ring-1 ring-amber-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500';
+        } else {
+          notesInput.className = 'notes-input w-full px-3 py-1.5 text-xs bg-white/80 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-500';
+        }
+      }
+    }
+
+    function setRating(internalId, score) {
+      const item = rawDataset.find(i => i.__internal_id === internalId);
+      if (!item) return;
+
+      item.rating = score;
+      item.is_vague = false;
+      item.timestamp = new Date().toISOString();
+      item.auditor = document.getElementById('auditor-id').value || 'Carlo';
+
+      if (item.original_rating !== undefined && item.original_rating !== '') {
+        item.rating_diff = Number(score) - Number(item.original_rating);
       }
 
       saveSession();
-      renderPage();
+      syncDatasetToFirestore();
+      updateCardUI(internalId);
+      updateOverallStats();
+      checkPageConfirmationStatus(getCurrentPageBatch());
     }
 
-    function setBlindNotes(internalId, notes) {
+    function setVague(internalId, isVague) {
       const item = rawDataset.find(i => i.__internal_id === internalId);
       if (!item) return;
-      item.blind_notes = notes;
+
+      item.is_vague = isVague;
+      if (isVague) {
+        item.rating = '';
+      }
+      item.timestamp = new Date().toISOString();
+      item.auditor = document.getElementById('auditor-id').value || 'Carlo';
+
       saveSession();
+      syncDatasetToFirestore();
+      updateCardUI(internalId);
+      updateOverallStats();
+      checkPageConfirmationStatus(getCurrentPageBatch());
+    }
+
+    let notesTimeout = null;
+    function setNotes(internalId, notes) {
+      const item = rawDataset.find(i => i.__internal_id === internalId);
+      if (!item) return;
+      item.notes = notes;
+      saveSession();
+      updateCardUI(internalId);
+      checkPageConfirmationStatus(getCurrentPageBatch());
+
+      if (notesTimeout) clearTimeout(notesTimeout);
+      notesTimeout = setTimeout(() => {
+        syncDatasetToFirestore();
+      }, 400);
+    }
+
+    function submitCurrentPageCases(pageItems) {
+      const currentAuditor = document.getElementById('auditor-id').value || 'Carlo';
+      pageItems.forEach(i => {
+        i.is_submitted = true;
+        i.auditor = currentAuditor;
+      });
+      saveSession();
+      syncDatasetToFirestore();
     }
 
     function handleNextBatch() {
-      const filtered = getFilteredData();
-      const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
-      if (currentPage < totalPages) {
-        currentPage++;
+      const pageItems = getCurrentPageBatch();
+      const allCompleted = pageItems.length > 0 && pageItems.every(i => {
+        const hasRating = i.rating !== '' && i.rating !== undefined;
+        const isVagueValid = i.is_vague && i.notes && i.notes.trim().length > 0;
+        return hasRating || isVagueValid;
+      });
+
+      if (!allCompleted) {
+        alert("Please complete/answer all cases on this page before proceeding.");
+        return;
+      }
+
+      submitCurrentPageCases(pageItems);
+
+      const totalPages = Math.ceil(getFilteredData().length / ITEMS_PER_PAGE) || 1;
+
+      if (currentPage <= totalPages) {
         renderPage();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        alert("You have reached the last batch of this view.");
+        renderPage();
+        alert("All cases in this view have been submitted!");
       }
+    }
+
+    function getContentLevelVal(item) {
+      for (const key of Object.keys(item)) {
+        const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (cleanKey === 'contentlevel') {
+          return item[key];
+        }
+      }
+      return item.content_level !== undefined ? item.content_level : (item.original_rating !== undefined ? item.original_rating : '');
     }
 
     function handleExportAndReset() {
@@ -742,13 +1146,93 @@
         return;
       }
 
-      const worksheet = XLSX.utils.json_to_sheet(rawDataset);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Audited Results");
+      const currentAuditor = document.getElementById('auditor-id').value || 'Carlo';
 
-      const auditorId = document.getElementById('auditor-id').value.trim() || 'Auditor';
+      const keysToRemove = [
+        'blind decision', 'blind_decision',
+        'blind note', 'blind_note', 'blind_notes',
+        'decision diff', 'decision_diff',
+        'blind time', 'blind_time', 'blind_timestamp',
+        'blind auditing', 'blind_auditing', 'blind_auditor',
+        '__internal_id', 'is_submitted'
+      ];
+
+      const exportData = rawDataset.map(item => {
+        const row = {};
+
+        const qaRating = item.rating !== '' && item.rating !== undefined ? item.rating : '';
+        const timestamp = item.timestamp || '';
+        const auditorName = item.auditor || currentAuditor;
+        const vagueCases = item.is_vague ? 'Yes' : 'No';
+        const remarks = item.notes || '';
+
+        const contentLevel = getContentLevelVal(item);
+
+        let ratingDiffCases = 'FALSE';
+        if (qaRating !== '' && contentLevel !== '') {
+          const isMatch = String(qaRating).trim() === String(contentLevel).trim();
+          ratingDiffCases = isMatch ? 'TRUE' : 'FALSE';
+        }
+
+        // Copy original columns except removed keys
+        Object.keys(item).forEach(key => {
+          const lowerKey = key.toLowerCase().trim();
+          if (!keysToRemove.includes(key) && !keysToRemove.includes(lowerKey)) {
+            if (lowerKey === 'rating' || lowerKey === 'qa rating' || lowerKey === 'qa_rating') {
+              row[key] = qaRating;
+            } else if (lowerKey === 'rating_diff' || lowerKey === 'rating diff' || lowerKey === 'rating diff cases') {
+              row[key] = ratingDiffCases;
+            } else if (lowerKey === 'is_vague' || lowerKey === 'vague cases' || lowerKey === 'vague_cases') {
+              row[key] = vagueCases;
+            } else if (lowerKey === 'notes' || lowerKey === 'remarks') {
+              row[key] = remarks;
+            } else if (lowerKey === 'timestamp') {
+              row[key] = timestamp;
+            } else if (lowerKey === 'auditor' || lowerKey === 'auditor name' || lowerKey === 'auditor_name') {
+              row[key] = auditorName;
+            } else if (key !== 'rating' && key !== 'notes' && key !== 'is_vague' && key !== 'timestamp' && key !== 'auditor' && key !== 'decision' && key !== 'rating_diff') {
+              row[key] = item[key];
+            }
+          }
+        });
+
+        // Ensure required standard exported fields exist if not already present in row
+        if (row['rating'] === undefined && row['QA rating'] === undefined) {
+          row['QA rating'] = qaRating;
+        }
+        if (row['rating_diff'] === undefined && row['rating diff cases'] === undefined) {
+          row['rating diff cases'] = ratingDiffCases;
+        }
+        if (row['is_vague'] === undefined && row['Vague cases'] === undefined) {
+          row['is_vague'] = vagueCases;
+        }
+        if (row['notes'] === undefined && row['Remarks'] === undefined) {
+          row['notes'] = remarks;
+        }
+        if (row['timestamp'] === undefined && row['Timestamp'] === undefined) {
+          row['Timestamp'] = timestamp;
+        }
+        if (row['auditor'] === undefined && row['Auditor Name'] === undefined) {
+          row['Auditor Name'] = auditorName;
+        }
+
+        return row;
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Results");
+
       const dateStr = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(workbook, `Veritas_QA_BlindAudit_${auditorId}_${dateStr}.xlsx`);
+      XLSX.writeFile(workbook, `Veritas_QA_Audit_${currentAuditor}_${dateStr}.xlsx`);
+
+      // Reset state after extracting data
+      rawDataset = [];
+      localStorage.removeItem('veritas_qa_session');
+      syncDatasetToFirestore();
+      exportBtn.disabled = true;
+      currentPage = 1;
+      renderPage();
     }
 
     // Modal Image Functions
@@ -819,11 +1303,13 @@
       imgRotate = 0;
       imgFlipH = 1;
       imgFlipV = 1;
+      translateX = 0;
+      translateY = 0;
       applyImageTransform();
     }
 
     function zoomImage(delta) {
-      imgScale = Math.max(0.5, Math.min(5, imgScale + delta));
+      imgScale = Math.max(0.5, Math.min(6, imgScale + delta));
       applyImageTransform();
     }
 
@@ -840,13 +1326,32 @@
 
     function applyImageTransform() {
       const img = document.getElementById('image-modal-src');
-      img.style.transform = `scale(${imgScale}) rotate(${imgRotate}deg) scaleX(${imgFlipH}) scaleY(${imgFlipV})`;
+      img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${imgScale}) rotate(${imgRotate}deg) scaleX(${imgFlipH}) scaleY(${imgFlipV})`;
+    }
+
+    function handleModalWheelZoom(e) {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+      const newScale = Math.max(0.5, Math.min(8, imgScale * zoomFactor));
+
+      const viewport = document.getElementById('image-modal-viewport');
+      const rect = viewport.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left - rect.width / 2;
+      const cursorY = e.clientY - rect.top - rect.height / 2;
+
+      translateX += (cursorX - translateX) * (1 - zoomFactor);
+      translateY += (cursorY - translateY) * (1 - zoomFactor);
+
+      imgScale = newScale;
+      applyImageTransform();
     }
 
     function setupImageModalEvents() {
       const viewport = document.getElementById('image-modal-viewport');
       let isDragging = false;
-      let startX, startY, translateX = 0, translateY = 0;
+      let startX, startY;
+
+      viewport.addEventListener('wheel', handleModalWheelZoom, { passive: false });
 
       viewport.addEventListener('mousedown', (e) => {
         isDragging = true;
@@ -858,8 +1363,7 @@
         if (!isDragging) return;
         translateX = e.clientX - startX;
         translateY = e.clientY - startY;
-        const img = document.getElementById('image-modal-src');
-        img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${imgScale}) rotate(${imgRotate}deg) scaleX(${imgFlipH}) scaleY(${imgFlipV})`;
+        applyImageTransform();
       });
 
       window.addEventListener('mouseup', () => { isDragging = false; });
